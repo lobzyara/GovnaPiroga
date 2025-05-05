@@ -1,0 +1,29 @@
+name: Build GovnaPiroga EXE
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+          
+      - name: Build EXE with icon
+        run: |
+          pyinstaller \
+            --onefile \
+            --windowed \
+            --icon=IMG_8028.ico \
+            --name "GovnaPiroga" \
+            GovnaPiroga.py
+          
+      - uses: actions/upload-artifact@v3
+        with:
+          name: GovnaPiroga_EXE
+          path: dist/GovnaPiroga.exe
