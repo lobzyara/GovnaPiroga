@@ -1,31 +1,32 @@
-name: Build GovnaPiroga EXE (Windows 7 compatible)
+name: Build GovnaPiroga EXE (Windows 7)
 on: [push]
 
 jobs:
   build:
-    runs-on: windows-latest  # Сборка на Windows!
+    runs-on: windows-2019  # Только эта версия поддерживает Python 3.7!
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Python 3.7
-        uses: actions/setup-python@v4
+      - name: Install Python 3.7.9
+        uses: actions/setup-python@v2
         with:
-          python-version: "3.7"  # Ключевое изменение!
+          python-version: "3.7.9"  # Последняя версия для Win7
 
       - name: Install PyInstaller
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller==4.10  # Последняя стабильная для Python 3.7
+          pip install pyinstaller==4.10  # Совместимая версия
 
-      - name: Build EXE
+      - name: Build EXE (PowerShell syntax)
+        shell: pwsh
         run: |
-          pyinstaller \
-            --onefile \
-            --noconsole \
-            --icon=IMG_8028.ico \
-            --hidden-import=tkinter \
-            --collect-all tkinter \
-            --add-data "IMG_8028.ico;." \
+          pyinstaller `
+            --onefile `
+            --noconsole `
+            --icon=IMG_8028.ico `
+            --hidden-import=tkinter `
+            --collect-all tkinter `
+            --add-data "IMG_8028.ico;." `
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
