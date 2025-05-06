@@ -1,30 +1,37 @@
-name: Build 32-bit EXE
+name: Build GovnaPiroga (Win7 All-in-One)
 on: [push]
 
 jobs:
   build:
-    runs-on: windows-2019  # Важно для Python 3.7
+    runs-on: windows-2019  # Обязательно для Python 3.7
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Python 3.7.9 (32-bit)
         uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
-          architecture: "x86"  # Ключевая строка!
+          architecture: "x86"  # Ключевой параметр!
 
       - name: Install PyInstaller
-        run: pip install pyinstaller==4.10
-
-      - name: Build 32-bit EXE
         run: |
-          pyinstaller `
-            --onefile `
-            --noconsole `
-            --icon=IMG_8028.ico `
+          python -m pip install --upgrade pip
+          pip install pyinstaller==4.10
+
+      - name: Build EXE (with embedded DLLs)
+        run: |
+          pyinstaller ^
+            --onefile ^
+            --noconsole ^
+            --icon=IMG_8028.ico ^
+            --add-data "IMG_8028.ico;." ^
+            --collect-all api-ms-win-crt-runtime-l1-1-0 ^  # Встраиваем CRT
+            --collect-all vcruntime140 ^  # Встраиваем VC++ DLL
+            --paths "C:\Python37" ^  # Путь к Python (если нужно)
+            --clean ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_32bit
+          name: GovnaPiroga_Win7_AllDLLs
           path: dist/GovnaPiroga.exe
