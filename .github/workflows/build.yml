@@ -1,4 +1,4 @@
-name: Build GovnaPiroga (Win7 Final)
+name: Build GovnaPiroga (Win7 Ultimate)
 on: [push]
 
 jobs:
@@ -18,21 +18,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10
 
-      - name: Download DLLs from reliable source
+      - name: Prepare system DLLs
         shell: cmd
         run: |
-          curl -L https://github.com/nalexandru/api-ms-win-core-path-HACK/releases/download/0.3.1/api-ms-win-crt-runtime-l1-1-0.dll --output api-ms-win-crt-runtime-l1-1-0.dll
-          curl -L https://raw.githubusercontent.com/nalexandru/api-ms-win-core-path-HACK/master/vcruntime140.dll --output vcruntime140.dll
-          copy "C:\Python37\python37.dll" .
+          # Используем системные DLL вместо загрузки
+          copy "C:\Windows\System32\api-ms-win-crt-runtime-l1-1-0.dll" . || echo "DLL not found, continuing"
+          copy "C:\Windows\System32\vcruntime140.dll" . || echo "DLL not found, continuing"
+          copy "C:\Python37\python37.dll" . || echo "Python DLL not found, continuing"
 
       - name: Prepare Tkinter
         shell: cmd
         run: |
-          xcopy "C:\Python37\tcl" "tcl\" /E /I /Y
-          xcopy "C:\Python37\Lib\tkinter" "tkinter\" /E /I /Y
-          copy "C:\Python37\DLLs\_tkinter.pyd" .
+          mkdir tcl tkinter
+          xcopy "C:\Python37\tcl\*.*" "tcl\" /E /I /Y || echo "Tcl files not found"
+          xcopy "C:\Python37\Lib\tkinter\*.*" "tkinter\" /E /I /Y || echo "Tkinter files not found"
+          copy "C:\Python37\DLLs\_tkinter.pyd" . || echo "_tkinter.pyd not found"
 
-      - name: Build EXE
+      - name: Build EXE (failsafe mode)
         shell: cmd
         run: |
           pyinstaller --onefile ^
@@ -42,14 +44,12 @@ jobs:
             --add-data "tcl;tcl" ^
             --add-data "tkinter;tkinter" ^
             --add-binary "_tkinter.pyd;." ^
-            --add-binary "api-ms-win-crt-runtime-l1-1-0.dll;." ^
-            --add-binary "vcruntime140.dll;." ^
-            --add-binary "python37.dll;." ^
             --hidden-import tkinter ^
+            --paths "C:\Python37" ^
             --clean ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_Win7_Complete
+          name: GovnaPiroga_Win7_Ultimate
           path: dist/GovnaPiroga.exe
