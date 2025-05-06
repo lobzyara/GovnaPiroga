@@ -1,55 +1,49 @@
-name: Build GovnaPiroga (Win7 Ultimate)
+name: Build GovnaPiroga (Win7 x86 with Embedded DLL)
 on: [push]
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2019  # Критично для Python 3.7
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Python 3.7.9 (32-bit)
+      - name: Download and prepare DLLs
+        shell: powershell
+        run: |
+          # Скачиваем необходимые DLL
+          Invoke-WebRequest -Uri "https://dll-files.com/dl/api-ms-win-crt-runtime-l1-1-0.dll" -OutFile "api-ms-win-crt-runtime-l1-1-0.dll"
+          Invoke-WebRequest -Uri "https://dll-files.com/dl/python37.dll" -OutFile "python37.dll"
+          Invoke-WebRequest -Uri "https://dll-files.com/dl/vcruntime140.dll" -OutFile "vcruntime140.dll"
+
+          # Проверяем наличие файлов
+          Get-ChildItem -Path *.dll
+
+      - name: Set up Python 3.7.9 (32-bit)
         uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
           architecture: "x86"
 
       - name: Install PyInstaller
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller==4.10
+        run: pip install pyinstaller==4.10
 
-      - name: Prepare system DLLs
-        shell: cmd
-        run: |
-          # Используем системные DLL вместо загрузки
-          copy "C:\Windows\System32\api-ms-win-crt-runtime-l1-1-0.dll" . || echo "DLL not found, continuing"
-          copy "C:\Windows\System32\vcruntime140.dll" . || echo "DLL not found, continuing"
-          copy "C:\Python37\python37.dll" . || echo "Python DLL not found, continuing"
-
-      - name: Prepare Tkinter
-        shell: cmd
-        run: |
-          mkdir tcl tkinter
-          xcopy "C:\Python37\tcl\*.*" "tcl\" /E /I /Y || echo "Tcl files not found"
-          xcopy "C:\Python37\Lib\tkinter\*.*" "tkinter\" /E /I /Y || echo "Tkinter files not found"
-          copy "C:\Python37\DLLs\_tkinter.pyd" . || echo "_tkinter.pyd not found"
-
-      - name: Build EXE (failsafe mode)
+      - name: Build EXE with DLL
         shell: cmd
         run: |
           pyinstaller --onefile ^
             --noconsole ^
             --icon=IMG_8028.ico ^
             --add-data "IMG_8028.ico;." ^
-            --add-data "tcl;tcl" ^
-            --add-data "tkinter;tkinter" ^
-            --add-binary "_tkinter.pyd;." ^
-            --hidden-import tkinter ^
-            --paths "C:\Python37" ^
+            --add-binary "api-ms-win-crt-runtime-l1-1-0.dll;." ^
+            --add-binary "python37.dll;." ^
+            --add-binary "vcruntime140.dll;." ^
+            --hidden-import=tkinter ^
+            --hidden-import=csv ^
             --clean ^
+            --name GovnaPiroga ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_Win7_Ultimate
+          name: GovnaPiroga_Final
           path: dist/GovnaPiroga.exe
