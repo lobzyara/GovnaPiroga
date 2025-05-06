@@ -1,4 +1,4 @@
-name: Build GovnaPiroga (Win7 Stable)
+name: Build GovnaPiroga (Win7 Final)
 on: [push]
 
 jobs:
@@ -18,29 +18,38 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10
 
-      - name: Download required DLLs
-        shell: pwsh
+      - name: Download DLLs from reliable source
+        shell: cmd
         run: |
-          Invoke-WebRequest -Uri "https://www.dll-files.com/download/api-ms-win-crt-runtime-l1-1-0.dll.html" -OutFile "api-ms-win-crt-runtime-l1-1-0.dll"
-          Invoke-WebRequest -Uri "https://www.dll-files.com/download/vcruntime140.dll.html" -OutFile "vcruntime140.dll"
-          # Для python37.dll используем системный файл
-          Copy-Item "C:\Python37\python37.dll" -Destination "."
+          curl -L https://github.com/nalexandru/api-ms-win-core-path-HACK/releases/download/0.3.1/api-ms-win-crt-runtime-l1-1-0.dll --output api-ms-win-crt-runtime-l1-1-0.dll
+          curl -L https://raw.githubusercontent.com/nalexandru/api-ms-win-core-path-HACK/master/vcruntime140.dll --output vcruntime140.dll
+          copy "C:\Python37\python37.dll" .
 
-      - name: Build EXE (Safe Mode)
+      - name: Prepare Tkinter
+        shell: cmd
+        run: |
+          xcopy "C:\Python37\tcl" "tcl\" /E /I /Y
+          xcopy "C:\Python37\Lib\tkinter" "tkinter\" /E /I /Y
+          copy "C:\Python37\DLLs\_tkinter.pyd" .
+
+      - name: Build EXE
         shell: cmd
         run: |
           pyinstaller --onefile ^
             --noconsole ^
             --icon=IMG_8028.ico ^
             --add-data "IMG_8028.ico;." ^
+            --add-data "tcl;tcl" ^
+            --add-data "tkinter;tkinter" ^
+            --add-binary "_tkinter.pyd;." ^
             --add-binary "api-ms-win-crt-runtime-l1-1-0.dll;." ^
             --add-binary "vcruntime140.dll;." ^
             --add-binary "python37.dll;." ^
-            --paths "C:\Python37" ^
+            --hidden-import tkinter ^
             --clean ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_Win7_Final
+          name: GovnaPiroga_Win7_Complete
           path: dist/GovnaPiroga.exe
