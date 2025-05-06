@@ -1,9 +1,9 @@
-name: Build GovnaPiroga (Windows 7 x86 - Pre-installed Dependencies)
+name: Build GovnaPiroga (Windows 7 x86)
 on: [push]
 
 jobs:
   build:
-    runs-on: windows-2019  # Windows Server 2019 (поддержка Python 3.7)
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4
 
@@ -11,25 +11,25 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
-          architecture: "x86"  # Важно для 32-битной Windows 7
+          architecture: "x86"
 
       - name: Install PyInstaller
         run: pip install pyinstaller==4.10
 
-      - name: Build Standalone EXE
+      - name: Build EXE
         shell: cmd
         run: |
-          pyinstaller --onefile ^
+          pyinstaller ^
+            --onefile ^
             --noconsole ^
             --icon=IMG_8028.ico ^
             --add-data "IMG_8028.ico;." ^
-            --paths "C:\Python37" ^  # Использует системный Python
-            --hidden-import=tkinter ^
-            --hidden-import=csv ^
+            --hidden-import tkinter ^
+            --hidden-import csv ^
             --clean ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_Win7_NoDLL
+          name: GovnaPiroga_Win7
           path: dist/GovnaPiroga.exe
