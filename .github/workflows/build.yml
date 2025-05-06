@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: windows-2019  # Обязательно для Python 3.7
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4
 
@@ -13,21 +13,19 @@ jobs:
           python-version: "3.7.9"
           architecture: "x86"
 
-      - name: Install dependencies
+      - name: Install PyInstaller
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10
-          pip install tkinter
 
       - name: Prepare DLL files
         shell: cmd
         run: |
-          # Копируем системные DLL в папку проекта
           copy "C:\Windows\System32\api-ms-win-crt-runtime-l1-1-0.dll" .
-          copy "C:\Windows\System32\python37.dll" .
+          copy "C:\Python37\python37.dll" .
           copy "C:\Windows\System32\vcruntime140.dll" .
 
-      - name: Build EXE (with DLL embedding)
+      - name: Build EXE
         shell: cmd
         run: |
           pyinstaller --onefile ^
@@ -37,8 +35,6 @@ jobs:
             --add-binary "api-ms-win-crt-runtime-l1-1-0.dll;." ^
             --add-binary "python37.dll;." ^
             --add-binary "vcruntime140.dll;." ^
-            --hidden-import=tkinter ^
-            --hidden-import=csv ^
             --clean ^
             GovnaPiroga.py
 
