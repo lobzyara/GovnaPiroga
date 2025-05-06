@@ -1,9 +1,9 @@
-name: Build GovnaPiroga (Win7 All-in-One)
+name: Build GovnaPiroga (Win7 x86 with DLL)
 on: [push]
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2019  # Обязательно для Python 3.7
     steps:
       - uses: actions/checkout@v4
 
@@ -13,26 +13,36 @@ jobs:
           python-version: "3.7.9"
           architecture: "x86"
 
-      - name: Install PyInstaller
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10
+          pip install tkinter
 
-      - name: Build EXE (PowerShell compatible)
-        shell: pwsh
+      - name: Prepare DLL files
+        shell: cmd
         run: |
-          pyinstaller `
-            --onefile `
-            --noconsole `
-            --icon=IMG_8028.ico `
-            --add-data "IMG_8028.ico;." `
-            --collect-all api-ms-win-crt-runtime-l1-1-0 `
-            --collect-all vcruntime140 `
-            --paths "C:\Python37" `
-            --clean `
+          # Копируем системные DLL в папку проекта
+          copy "C:\Windows\System32\api-ms-win-crt-runtime-l1-1-0.dll" .
+          copy "C:\Windows\System32\python37.dll" .
+          copy "C:\Windows\System32\vcruntime140.dll" .
+
+      - name: Build EXE (with DLL embedding)
+        shell: cmd
+        run: |
+          pyinstaller --onefile ^
+            --noconsole ^
+            --icon=IMG_8028.ico ^
+            --add-data "IMG_8028.ico;." ^
+            --add-binary "api-ms-win-crt-runtime-l1-1-0.dll;." ^
+            --add-binary "python37.dll;." ^
+            --add-binary "vcruntime140.dll;." ^
+            --hidden-import=tkinter ^
+            --hidden-import=csv ^
+            --clean ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_Win7_AllDLLs
+          name: GovnaPiroga_Win7_FullDLL
           path: dist/GovnaPiroga.exe
