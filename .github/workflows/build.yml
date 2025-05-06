@@ -1,4 +1,4 @@
-name: Build GovnaPiroga (Win7 x86 with DLL)
+name: Build GovnaPiroga (Win7 Stable)
 on: [push]
 
 jobs:
@@ -18,14 +18,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10
 
-      - name: Prepare DLL files
-        shell: cmd
+      - name: Download required DLLs
+        shell: pwsh
         run: |
-          copy "C:\Windows\System32\api-ms-win-crt-runtime-l1-1-0.dll" .
-          copy "C:\Python37\python37.dll" .
-          copy "C:\Windows\System32\vcruntime140.dll" .
+          Invoke-WebRequest -Uri "https://www.dll-files.com/download/api-ms-win-crt-runtime-l1-1-0.dll.html" -OutFile "api-ms-win-crt-runtime-l1-1-0.dll"
+          Invoke-WebRequest -Uri "https://www.dll-files.com/download/vcruntime140.dll.html" -OutFile "vcruntime140.dll"
+          # Для python37.dll используем системный файл
+          Copy-Item "C:\Python37\python37.dll" -Destination "."
 
-      - name: Build EXE
+      - name: Build EXE (Safe Mode)
         shell: cmd
         run: |
           pyinstaller --onefile ^
@@ -33,12 +34,13 @@ jobs:
             --icon=IMG_8028.ico ^
             --add-data "IMG_8028.ico;." ^
             --add-binary "api-ms-win-crt-runtime-l1-1-0.dll;." ^
-            --add-binary "python37.dll;." ^
             --add-binary "vcruntime140.dll;." ^
+            --add-binary "python37.dll;." ^
+            --paths "C:\Python37" ^
             --clean ^
             GovnaPiroga.py
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GovnaPiroga_Win7_FullDLL
+          name: GovnaPiroga_Win7_Final
           path: dist/GovnaPiroga.exe
