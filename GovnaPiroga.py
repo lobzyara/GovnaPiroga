@@ -4,6 +4,7 @@ import os
 import csv
 from datetime import datetime
 
+# Настройки папки
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 WORK_FOLDER = os.path.join(DESKTOP, "IvanorProScan")
 os.makedirs(WORK_FOLDER, exist_ok=True)
@@ -14,11 +15,10 @@ class IvanorProScan:
         self.params = {}
         self.setup_ui()
         self.reset_settings()
-
        
     def setup_ui(self):
         self.root.title("IvanorProScan v3.4")
-        self.root.geometry("850x800")
+        self.root.geometry("850x500")  # Уменьшенная высота окна
         self.root.resizable(False, False)
         self.center_window()
         
@@ -78,10 +78,10 @@ class IvanorProScan:
             command=self.create_artcam_file
         ).pack(fill=tk.X, pady=10)
 
-        # Подпись
+        # Подпись (изменено на COXO inc)
         ttk.Label(
             main_frame,
-            text="ivanor inc. | Версия 3.4 | Чистый G-код без комментариев",
+            text="COXO inc | Версия 3.4 | Чистый G-код без комментариев",
             font=('Arial', 8),
             foreground="gray"
         ).pack(side=tk.BOTTOM, pady=5)
@@ -145,21 +145,18 @@ class IvanorProScan:
                 raise ValueError("Длина сканирования должна быть > 0")
             if params["probe_depth"] <= 0:
                 raise ValueError("Глубина зондирования должна быть > 0")
-            if params["use_start_zone"] and params["start_step"] <= 0:
-                raise ValueError("Шаг стартовой зоны должен быть > 0")
-            if params["use_end_zone"] and params["end_step"] <= 0:
-                raise ValueError("Шаг конечной зоны должен быть > 0")
 
-            # Генерация чистого G-кода без комментариев
+            # Генерация G-кода
             gcode = [
+                "(*** СКАНИРОВАНИЕ ***)",
                 "M40",
                 f"F{params['speed']}",
+                "(Подведите щуп к краю диска и нажмите СТАРТ)",
                 "M00",
                 "G91"
             ]
 
             y_pos = 0.0
-
             # Стартовая зона
             if params["use_start_zone"] and params["start_zone"] > 0:
                 while y_pos < params["start_zone"]:
@@ -187,29 +184,28 @@ class IvanorProScan:
                         gcode.append(f"G0Y{params['end_step']}")
                         y_pos += params["end_step"]
 
-            # Завершение программы (сначала X, потом Y)
+            # Завершение программы
             gcode.extend([
-                "G90",  # Абсолютные координаты
-                "G0X0",  # Сначала в ноль по X
-                "G0Y0",  # Затем в ноль по Y
+                "G90",
+                "G0X0",
+                "G0Y0",
                 "M30~"
             ])
 
-            # Сохранение файла
-            filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.nc"
+            # Сохранение файла .tap
+            filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tap"
             with open(os.path.join(WORK_FOLDER, filename), "w", encoding="utf-8") as f:
                 f.write("\n".join(gcode))
 
             messagebox.showinfo(
                 "Готово",
                 f"G-код сохранен в:\n{filename}\n\n"
-                f"Тип файла: Чистый G-код без комментариев\n"
+                f"Тип файла: .tap\n"
                 f"Общая длина сканирования: {y_pos:.2f} мм"
             )
         except Exception as e:
             messagebox.showerror("Ошибка генерации", str(e))
 
-    
     def create_artcam_file(self):
         try:
             points_file = filedialog.askopenfilename(
@@ -239,7 +235,6 @@ class IvanorProScan:
             output_file = os.path.join(WORK_FOLDER, filename)
             
             with open(output_file, 'w', encoding='utf-8') as f:
-                # Минималистичный формат без пробелов
                 f.write("0\nSECTION\n")
                 f.write("2\nENTITIES\n")
                 f.write("0\nPOLYLINE\n")
@@ -248,7 +243,7 @@ class IvanorProScan:
                 for x, y in points:
                     f.write("0\nVERTEX\n")
                     f.write("8\n0\n")
-                    f.write(f"10\n{x:.5f}\n")  # Без пробелов
+                    f.write(f"10\n{x:.5f}\n")
                     f.write(f"20\n{y:.5f}\n")
                     f.write("30\n0.00000\n")
                     f.write("70\n32\n")
