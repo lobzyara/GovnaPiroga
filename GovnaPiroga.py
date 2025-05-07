@@ -18,97 +18,91 @@ class IvanorProScan:
        
     def setup_ui(self):
         self.root.title("IvanorProScan v3.4")
-        self.root.geometry("850x500")  # Уменьшенная высота окна
+        self.root.geometry("850x460")
         self.root.resizable(False, False)
         self.center_window()
         
-        main_frame = ttk.Frame(self.root, padding=20)
+        main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
         self.setup_styles()
 
-        # Основные параметры
-        params_frame = ttk.LabelFrame(main_frame, text="ОСНОВНЫЕ ПАРАМЕТРЫ СКАНИРОВАНИЯ", padding=10)
-        params_frame.pack(fill=tk.X, pady=5)
+        # Основные параметры в 2 колонки
+        params_frame = ttk.LabelFrame(main_frame, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=5)
+        params_frame.pack(fill=tk.X, pady=3)
         
-        self.add_param(params_frame, "scan_length", "Общая длина сканирования (мм):", 0)
-        self.add_param(params_frame, "main_step", "Шаг основной зоны (мм):", 1)
-        self.add_param(params_frame, "probe_depth", "Глубина зондирования (мм):", 2)
-        self.add_param(params_frame, "retract", "Величина отвода (мм):", 3)
-        self.add_param(params_frame, "speed", "Скорость сканирования (мм/мин):", 4)
+        param_grid = ttk.Frame(params_frame)
+        param_grid.pack(fill=tk.X)
+        
+        self.add_compact_param(param_grid, "scan_length", "Длина сканирования (мм):", 0, 0)
+        self.add_compact_param(param_grid, "main_step", "Шаг основной зоны (мм):", 0, 1)
+        self.add_compact_param(param_grid, "probe_depth", "Глубина зондирования (мм):", 1, 0)
+        self.add_compact_param(param_grid, "retract", "Величина отвода (мм):", 1, 1)
+        self.add_compact_param(param_grid, "speed", "Скорость (мм/мин):", 2, 0)
+
+        # Зоны сканирования в одной строке
+        zones_frame = ttk.Frame(main_frame)
+        zones_frame.pack(fill=tk.X, pady=3)
 
         # Стартовая зона
-        start_zone_frame = ttk.LabelFrame(main_frame, text="СТАРТОВАЯ ЗОНА", padding=10)
-        start_zone_frame.pack(fill=tk.X, pady=5)
-
-        self.add_checkbox(start_zone_frame, "use_start_zone", "Активировать стартовую зону", 0)
-        self.add_param(start_zone_frame, "start_zone", "Длина стартовой зоны (мм):", 1, "use_start_zone")
-        self.add_param(start_zone_frame, "start_step", "Шаг в стартовой зоне (мм):", 2, "use_start_zone")
+        start_zone_frame = ttk.LabelFrame(zones_frame, text="СТАРТОВАЯ ЗОНА", padding=5)
+        start_zone_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        
+        self.add_checkbox(start_zone_frame, "use_start_zone", "Активировать", 0)
+        self.add_compact_param(start_zone_frame, "start_zone", "Длина (мм):", 1, 0, "use_start_zone")
+        self.add_compact_param(start_zone_frame, "start_step", "Шаг (мм):", 1, 1, "use_start_zone")
 
         # Конечная зона
-        end_zone_frame = ttk.LabelFrame(main_frame, text="КОНЕЧНАЯ ЗОНА", padding=10)
-        end_zone_frame.pack(fill=tk.X, pady=5)
-
-        self.add_checkbox(end_zone_frame, "use_end_zone", "Активировать конечную зону", 0)
-        self.add_param(end_zone_frame, "end_zone", "Длина конечной зоны (мм):", 1, "use_end_zone")
-        self.add_param(end_zone_frame, "end_step", "Шаг в конечной зоне (мм):", 2, "use_end_zone")
+        end_zone_frame = ttk.LabelFrame(zones_frame, text="КОНЕЧНАЯ ЗОНА", padding=5)
+        end_zone_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        
+        self.add_checkbox(end_zone_frame, "use_end_zone", "Активировать", 0)
+        self.add_compact_param(end_zone_frame, "end_zone", "Длина (мм):", 1, 0, "use_end_zone")
+        self.add_compact_param(end_zone_frame, "end_step", "Шаг (мм):", 1, 1, "use_end_zone")
 
         # Кнопки управления
         btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(fill=tk.X, pady=15)
+        btn_frame.pack(fill=tk.X, pady=8)
 
         ttk.Button(
             btn_frame,
-            text="СБРОСИТЬ НАСТРОЙКИ",
+            text="СБРОС",
             style="Secondary.TButton",
-            command=self.reset_settings
-        ).pack(side=tk.LEFT, expand=True, padx=5)
+            command=self.reset_settings,
+            width=10
+        ).pack(side=tk.LEFT, expand=True, padx=3)
 
         ttk.Button(
             btn_frame,
-            text="ГЕНЕРИРОВАТЬ G-КОД",
+            text="G-КОД",
             style="Accent.TButton",
-            command=self.generate_gcode
-        ).pack(side=tk.LEFT, expand=True, padx=5)
+            command=self.generate_gcode,
+            width=10
+        ).pack(side=tk.LEFT, expand=True, padx=3)
 
-        # Кнопка для ArtCAM
         ttk.Button(
-            main_frame,
-            text="СОЗДАТЬ ФАЙЛ ДЛЯ ARTCAM",
+            btn_frame,
+            text="ARTCAM",
             style="Accent.TButton",
-            command=self.create_artcam_file
-        ).pack(fill=tk.X, pady=10)
+            command=self.create_artcam_file,
+            width=10
+        ).pack(side=tk.LEFT, expand=True, padx=3)
 
-        # Подпись (изменено на COXO inc)
+        # Подпись
         ttk.Label(
             main_frame,
-            text="COXO inc | Версия 3.4 | Чистый G-код без комментариев",
-            font=('Arial', 8),
+            text="COXO inc | v3.4",
+            font=('Arial', 7),
             foreground="gray"
-        ).pack(side=tk.BOTTOM, pady=5)
+        ).pack(side=tk.BOTTOM, pady=2)
 
-    def center_window(self):
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
-
-    def setup_styles(self):
-        style = ttk.Style()
-        style.configure("TLabelFrame", font=('Arial', 9, 'bold'))
-        style.configure("Accent.TButton", foreground="white", background="#4CAF50", font=('Arial', 10, 'bold'))
-        style.configure("Secondary.TButton", background="#f0f0f0", font=('Arial', 10))
-        style.map("Accent.TButton", background=[('active', '#45a049')])
-
-    def add_param(self, frame, param_name, label_text, row, dependency=None):
+    def add_compact_param(self, frame, param_name, label_text, row, col, dependency=None):
         container = ttk.Frame(frame)
-        container.grid(row=row, column=0, sticky="ew", pady=3)
+        container.grid(row=row, column=col, sticky="ew", padx=2, pady=1)
         
-        ttk.Label(container, text=label_text, width=28, anchor="e").pack(side=tk.LEFT, padx=5)
+        ttk.Label(container, text=label_text, width=14, anchor="e").pack(side=tk.LEFT)
         
         var = tk.DoubleVar(value=0.0)
-        entry = ttk.Entry(container, textvariable=var, width=12)
+        entry = ttk.Entry(container, textvariable=var, width=10)
         entry.pack(side=tk.LEFT)
         
         self.params[param_name] = var
@@ -122,10 +116,25 @@ class IvanorProScan:
         
         return var
 
+    def center_window(self):
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f'{width}x{height}+{x}+{y}')
+
+    def setup_styles(self):
+        style = ttk.Style()
+        style.configure("TLabelFrame", font=('Arial', 8, 'bold'))
+        style.configure("Accent.TButton", foreground="white", background="#4CAF50", font=('Arial', 9))
+        style.configure("Secondary.TButton", font=('Arial', 9))
+        style.map("Accent.TButton", background=[('active', '#45a049')])
+
     def add_checkbox(self, frame, param_name, text, row):
         var = tk.BooleanVar(value=False)
-        cb = ttk.Checkbutton(frame, text=text, variable=var)
-        cb.grid(row=row, column=0, sticky="w", pady=2, padx=5)
+        cb = ttk.Checkbutton(frame, text=text, variable=var, style='Toolbutton')
+        cb.grid(row=row, column=0, sticky="w", pady=1, padx=5)
         self.params[param_name] = var
         return var
 
@@ -140,13 +149,11 @@ class IvanorProScan:
         try:
             params = {name: var.get() for name, var in self.params.items()}
 
-            # Валидация параметров
             if params["scan_length"] <= 0:
                 raise ValueError("Длина сканирования должна быть > 0")
             if params["probe_depth"] <= 0:
                 raise ValueError("Глубина зондирования должна быть > 0")
 
-            # Генерация G-кода
             gcode = [
                 "(*** СКАНИРОВАНИЕ ***)",
                 "M40",
@@ -157,7 +164,6 @@ class IvanorProScan:
             ]
 
             y_pos = 0.0
-            # Стартовая зона
             if params["use_start_zone"] and params["start_zone"] > 0:
                 while y_pos < params["start_zone"]:
                     gcode.append(f"G31X{params['probe_depth']}")
@@ -166,7 +172,6 @@ class IvanorProScan:
                         gcode.append(f"G0Y{params['start_step']}")
                         y_pos += params["start_step"]
 
-            # Основная зона
             main_zone_end = params["scan_length"] - (params["end_zone"] if params["use_end_zone"] else 0)
             while y_pos < main_zone_end:
                 gcode.append(f"G31X{params['probe_depth']}")
@@ -175,7 +180,6 @@ class IvanorProScan:
                     gcode.append(f"G0Y{params['main_step']}")
                     y_pos += params["main_step"]
 
-            # Конечная зона
             if params["use_end_zone"] and params["end_zone"] > 0:
                 while y_pos < params["scan_length"]:
                     gcode.append(f"G31X{params['probe_depth']}")
@@ -184,7 +188,6 @@ class IvanorProScan:
                         gcode.append(f"G0Y{params['end_step']}")
                         y_pos += params["end_step"]
 
-            # Завершение программы
             gcode.extend([
                 "G90",
                 "G0X0",
@@ -192,7 +195,6 @@ class IvanorProScan:
                 "M30~"
             ])
 
-            # Сохранение файла .tap
             filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tap"
             with open(os.path.join(WORK_FOLDER, filename), "w", encoding="utf-8") as f:
                 f.write("\n".join(gcode))
@@ -217,7 +219,6 @@ class IvanorProScan:
             if not points_file:
                 return
 
-            # Чтение и обработка точек
             points = []
             current_x, current_y = 0.0, 0.0
             with open(points_file, 'r') as f:
@@ -252,8 +253,8 @@ class IvanorProScan:
                 f.write("0\nSEQEND\n")
 
             messagebox.showinfo(
-                "Готово (Минималистичный)",
-                f"Файл создан без пробелов:\n{filename}"
+                "Готово",
+                f"Файл создан:\n{filename}"
             )
         except Exception as e:
             messagebox.showerror("Ошибка", str(e))
