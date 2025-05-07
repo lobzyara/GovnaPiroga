@@ -4,7 +4,6 @@ import os
 import csv
 from datetime import datetime
 
-# Настройки папки
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 WORK_FOLDER = os.path.join(DESKTOP, "IvanorProScan")
 os.makedirs(WORK_FOLDER, exist_ok=True)
@@ -15,7 +14,8 @@ class IvanorProScan:
         self.params = {}
         self.setup_ui()
         self.reset_settings()
-        
+
+       
     def setup_ui(self):
         self.root.title("IvanorProScan v3.4")
         self.root.geometry("850x800")
@@ -187,10 +187,11 @@ class IvanorProScan:
                         gcode.append(f"G0Y{params['end_step']}")
                         y_pos += params["end_step"]
 
-            # Завершение программы
+            # Завершение программы (сначала X, потом Y)
             gcode.extend([
-                "G90",
-                "G0X0Y0",
+                "G90",  # Абсолютные координаты
+                "G0X0",  # Сначала в ноль по X
+                "G0Y0",  # Затем в ноль по Y
                 "M30~"
             ])
 
@@ -208,6 +209,7 @@ class IvanorProScan:
         except Exception as e:
             messagebox.showerror("Ошибка генерации", str(e))
 
+    
     def create_artcam_file(self):
         try:
             points_file = filedialog.askopenfilename(
@@ -219,6 +221,7 @@ class IvanorProScan:
             if not points_file:
                 return
 
+            # Чтение и обработка точек
             points = []
             current_x, current_y = 0.0, 0.0
             with open(points_file, 'r') as f:
@@ -232,22 +235,30 @@ class IvanorProScan:
             if len(points) < 2:
                 raise ValueError("Недостаточно точек для создания файла")
             
-            filename = f"artcam_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
             output_file = os.path.join(WORK_FOLDER, filename)
             
-            with open(output_file, 'w', newline='') as f:
-                writer = csv.writer(f, delimiter=',')
-                writer.writerow(["Type", "X", "Y", "Z", "Bulge", "Weight", "Layer"])
-                writer.writerow(["Point", f"{points[0][0]:.4f}", f"{points[0][1]:.4f}", "0.0", "0.0", "1", "0"])
-                for point in points[1:]:
-                    writer.writerow(["LineTo", f"{point[0]:.4f}", f"{point[1]:.4f}", "0.0", "0.0", "1", "0"])
+            with open(output_file, 'w', encoding='utf-8') as f:
+                # Минималистичный формат без пробелов
+                f.write("0\nSECTION\n")
+                f.write("2\nENTITIES\n")
+                f.write("0\nPOLYLINE\n")
+                f.write("8\n0\n")
+                
+                for x, y in points:
+                    f.write("0\nVERTEX\n")
+                    f.write("8\n0\n")
+                    f.write(f"10\n{x:.5f}\n")  # Без пробелов
+                    f.write(f"20\n{y:.5f}\n")
+                    f.write("30\n0.00000\n")
+                    f.write("70\n32\n")
+                    f.write("0\n")
+                
+                f.write("0\nSEQEND\n")
 
             messagebox.showinfo(
-                "Готово",
-                f"Файл для ArtCAM создан:\n{filename}\n\n"
-                "Как использовать:\n"
-                "1. Откройте файл в ArtCAM\n"
-                "2. Точки будут соединены автоматически"
+                "Готово (Минималистичный)",
+                f"Файл создан без пробелов:\n{filename}"
             )
         except Exception as e:
             messagebox.showerror("Ошибка", str(e))
