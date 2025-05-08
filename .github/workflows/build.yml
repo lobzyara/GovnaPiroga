@@ -15,17 +15,18 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4  # Обновлено до v4
+        uses: actions/checkout@v4
 
-      - name: Verify icon exists
+      - name: Verify icon exists (PowerShell)
+        shell: pwsh
         run: |
-          if not exist IMG_8028.ico (
-            echo "::error::Icon file IMG_8028.ico not found!"
+          if (-not (Test-Path "IMG_8028.ico")) {
+            Write-Error "Icon file IMG_8028.ico not found!"
             exit 1
-          )
+          }
 
       - name: Set up Python 3.7 (32-bit)
-        uses: actions/setup-python@v5  # Обновлено до v5
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x86
@@ -45,7 +46,7 @@ jobs:
             GovnaPiroga.py
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4  # Обновлено до v4
+        uses: actions/upload-artifact@v4
         with:
           name: GovnaPiroga_Win7
           path: dist/GovnaPiroga_Win7.exe
