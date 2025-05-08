@@ -140,13 +140,11 @@ class IvanorProScan:
         try:
             params = {name: var.get() for name, var in self.params.items()}
             
-            # Явное обнуление длин зон, если они отключены
             if not params["use_start_zone"]:
                 params["start_zone_length"] = 0.0
             if not params["use_end_zone"]:
                 params["end_zone_length"] = 0.0
             
-            # Валидация параметров
             errors = []
             if params["scan_length"] <= 0: 
                 errors.append("Общая длина сканирования должна быть > 0")
@@ -159,7 +157,6 @@ class IvanorProScan:
             if params["use_end_zone"] and params["end_zone_step"] <= 0: 
                 errors.append("Шаг конечной зоны должен быть > 0")
             
-            # Проверка зон
             if params["start_zone_length"] >= params["scan_length"]:
                 errors.append("Длина стартовой зоны должна быть меньше общей длины сканирования")
             if params["end_zone_length"] >= params["scan_length"]:
@@ -172,17 +169,16 @@ class IvanorProScan:
 
             gcode = [
                 "(*** сканирование ***)",
-                "M40",  # Включение датчика
-                f"F{params['speed']}",  # Скорость подачи
+                "M40",
+                f"F{params['speed']}",
                 "(установите щуп у края диска, затем нажмите СТАРТ!)",
-                "M00",  # Пауза для оператора
-                "G91"   # Относительные координаты
+                "M00",
+                "G91"
             ]
 
             y_pos = 0.0
             total_length = params["scan_length"]
 
-            # Стартовая зона (мелкий шаг)
             if params["use_start_zone"] and params["start_zone_length"] > 0:
                 start_steps = int(params["start_zone_length"] / params["start_zone_step"])
                 start_remainder = params["start_zone_length"] % params["start_zone_step"]
@@ -199,7 +195,6 @@ class IvanorProScan:
                     gcode.append(f"G0Y{start_remainder}")
                     y_pos += start_remainder
 
-            # Основная зона (основной шаг)
             main_zone_length = total_length - params["start_zone_length"] - params["end_zone_length"]
             main_steps = int(main_zone_length / params["main_zone_step"])
             main_remainder = main_zone_length % params["main_zone_step"]
@@ -216,7 +211,6 @@ class IvanorProScan:
                 gcode.append(f"G0Y{main_remainder}")
                 y_pos += main_remainder
 
-            # Конечная зона (мелкий шаг)
             if params["use_end_zone"] and params["end_zone_length"] > 0:
                 end_steps = int(params["end_zone_length"] / params["end_zone_step"])
                 end_remainder = params["end_zone_length"] % params["end_zone_step"]
@@ -233,15 +227,13 @@ class IvanorProScan:
                     gcode.append(f"G0Y{end_remainder}")
                     y_pos += end_remainder
 
-            # Завершение программы
             gcode.extend([
-                "G90",  # Абсолютные координаты
-                "G0X0",  # Возврат в начало по X
-                "G0Y0",  # Возврат в начало по Y
-                "M30"   # Конец программы
+                "G90",
+                "G0X0",
+                "G0Y0",
+                "M30"
             ])
 
-            # Сохранение файла в кодировке cp1251
             filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tap"
             filepath = os.path.join(WORK_FOLDER, filename)
             
@@ -264,97 +256,99 @@ class IvanorProScan:
             messagebox.showerror("Ошибка", str(e))
 
     def create_artcam_file(self):
-    try:
-        points_file = filedialog.askopenfilename(
-            initialdir=WORK_FOLDER,
-            title="Выберите файл точек из Mach3",
-            filetypes=(("Текстовые файлы", "*.txt"), ("Все файлы", "*.*"))
-        )
-        
-        if not points_file:
-            return
-
-        points = []
         try:
-            with open(points_file, 'r', encoding='cp1251') as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        parts = line.split(',')
-                        if len(parts) >= 2:
-                            try:
-                                x = float(parts[0])
-                                y = float(parts[1])
-                                z = float(parts[2]) if len(parts) >= 3 else 0.0
-                                points.append((x, y, z))
-                            except ValueError:
-                                continue
-        except (IOError, UnicodeDecodeError) as e:
-            raise IOError(f"Ошибка чтения файла (проверьте кодировку): {str(e)}")
+            points_file = filedialog.askopenfilename(
+                initialdir=WORK_FOLDER,
+                title="Выберите файл точек из Mach3",
+                filetypes=(("Текстовые файлы", "*.txt"), ("Все файлы", "*.*"))
+            )
+            
+            if not points_file:
+                return
 
-        if len(points) < 2:
-            raise ValueError("Необходимо минимум 2 точки")
+            points = []
+            try:
+                with open(points_file, 'r', encoding='cp1251') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            parts = line.split(',')
+                            if len(parts) >= 2:
+                                try:
+                                    x = float(parts[0].strip())
+                                    y = float(parts[1].strip())
+                                    z = float(parts[2].strip()) if len(parts) >= 3 else 0.0
+                                    points.append((x, y, z))
+                                except ValueError:
+                                    continue
+            except (IOError, UnicodeDecodeError) as e:
+                raise IOError(f"Ошибка чтения файла (проверьте кодировку): {str(e)}")
 
-        # Создаем DXF вручную для точного соответствия формату
-        dxf_content = [
-            "0",
-            "SECTION",
-            "2",
-            "ENTITIES",
-            "0",
-            "POLYLINE",
-            "8",  # Слой
-            "0",  # Имя слоя (по умолчанию)
-            "66",  # Флаг "фиксированного" количества вершин
-            "1",
-            "70",  # Тип полилинии (0 = обычная)
-            "0",
-        ]
+            if len(points) < 2:
+                raise ValueError("Необходимо минимум 2 точки")
 
-        # Добавляем вершины (VERTEX)
-        for x, y, z in points:
-            dxf_content.extend([
+            # Формируем DXF вручную
+            dxf_lines = [
                 "0",
-                "VERTEX",
+                "SECTION",
+                "2",
+                "ENTITIES",
+                "0",
+                "POLYLINE",
+                "8",  # Слой
+                "0",  # Имя слоя
+                "66",  # Флаг фиксированного количества вершин
+                "1",
+                "70",  # Тип полилинии
+                "0",   # 0 = обычная полилиния
+            ]
+
+            # Добавляем вершины
+            for x, y, z in points:
+                dxf_lines.extend([
+                    "0",
+                    "VERTEX",
+                    "8",
+                    "0",  # Слой
+                    "10",  # X
+                    f"{x:.5f}",
+                    "20",  # Y
+                    f"{y:.5f}",
+                    "30",  # Z
+                    f"{z:.5f}",
+                    "70",  # Флаги вершины
+                    "32",  # 32 = контрольная точка
+                ])
+
+            # Завершаем полилинию
+            dxf_lines.extend([
+                "0",
+                "SEQEND",
                 "8",
-                "0",  # Слой
-                "10",  # X
-                f"{x:.5f}",
-                "20",  # Y
-                f"{y:.5f}",
-                "30",  # Z
-                f"{z:.5f}",
-                "70",  # Флаги вершины
-                "32",  # 32 = контрольная точка полилинии
+                "0",
+                "0",
+                "ENDSEC",
+                "0",
+                "EOF"
             ])
 
-        # Завершаем полилинию
-        dxf_content.extend([
-            "0",
-            "SEQEND",
-            "0",
-            "ENDSEC",
-            "0",
-            "EOF"
-        ])
+            filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
+            filepath = os.path.join(WORK_FOLDER, filename)
+            
+            try:
+                with open(filepath, 'w', encoding='ascii') as f:
+                    f.write("\n".join(dxf_lines))
+            except IOError as e:
+                raise IOError(f"Не удалось сохранить DXF: {str(e)}")
 
-        filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
-        filepath = os.path.join(WORK_FOLDER, filename)
-        
-        try:
-            with open(filepath, "w", encoding='ascii') as f:
-                f.write("\n".join(dxf_content))
-        except IOError as e:
-            raise IOError(f"Не удалось сохранить DXF-файл: {str(e)}")
+            messagebox.showinfo(
+                "Готово!",
+                f"DXF создан в классическом формате:\n{filepath}\n"
+                f"Точек: {len(points)}"
+            )
+        except Exception as e:
+            messagebox.showerror("Ошибка", str(e))
 
-        messagebox.showinfo(
-            "Готово!",
-            f"DXF-файл создан в классическом формате:\n{filepath}\n"
-            f"Точек: {len(points)}"
-        )
-    except Exception as e:
-        messagebox.showerror("Ошибка", str(e))
-        
     def center_window(self):
         self.root.update_idletasks()
         width = self.root.winfo_width()
