@@ -1,7 +1,7 @@
 name: Build EXE for Windows 7
 
 on:
-  workflow_dispatch:  # Ручной запуск через кнопку
+  workflow_dispatch:  # Можно запускать вручную
   push:
     tags:
       - 'v*'
@@ -9,36 +9,41 @@ on:
 jobs:
   build:
     runs-on: windows-2019
-    timeout-minutes: 30  # Чтобы не слетало по времени
+    timeout-minutes: 30
     
     steps:
-    # 1. Загружаем код
-    - name: Checkout
-      uses: actions/checkout@v4  # Только так работает в 2024!
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    # 2. Ставим Python 3.4.4 (32-bit)
-    - name: Install Python
+    # Устанавливаем Python 3.4 вручную
+    - name: Install Python 3.4.4
       run: |
         $url = "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi"
-        $path = "$env:TEMP\python.msi"
+        $path = "$env:TEMP\python34.msi"
         Invoke-WebRequest $url -OutFile $path
         Start-Process msiexec.exe -Wait -ArgumentList "/i $path /quiet"
         echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
     
-    # 3. Ставим нужные библиотеки
-    - name: Install tools
+    # Скачиваем pip и PyInstaller вручную (старые версии)
+    - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip==9.0.3
-        pip install pyinstaller==3.6 ezdxf==0.17.2
+        # Скачиваем pip 9.0.3
+        Invoke-WebRequest https://bootstrap.pypa.io/3.4/get-pip.py -OutFile get-pip.py
+        python get-pip.py "pip==9.0.3"
+        
+        # Скачиваем PyInstaller 3.6
+        Invoke-WebRequest https://files.pythonhosted.org/packages/6d/7f/133e6eaefd1e2b4f4a856d3275f789e9849522b258bfe9bb5aaebc50073e/PyInstaller-3.6.tar.gz -OutFile pyinstaller.tar.gz
+        pip install pyinstaller.tar.gz
+        
+        # Устанавливаем ezdxf
+        pip install "ezdxf==0.17.2"
     
-    # 4. Собираем EXE
     - name: Build EXE
       run: |
         pyinstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
     
-    # 5. Загружаем результат
     - name: Upload EXE
-      uses: actions/upload-artifact@v4  # Обязательно v4!
+      uses: actions/upload-artifact@v4
       with:
         name: GovnaPiroga_Win7
         path: dist/GovnaPiroga.exe
