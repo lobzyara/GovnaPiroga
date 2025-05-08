@@ -264,54 +264,97 @@ class IvanorProScan:
             messagebox.showerror("Ошибка", str(e))
 
     def create_artcam_file(self):
+    try:
+        points_file = filedialog.askopenfilename(
+            initialdir=WORK_FOLDER,
+            title="Выберите файл точек из Mach3",
+            filetypes=(("Текстовые файлы", "*.txt"), ("Все файлы", "*.*"))
+        )
+        
+        if not points_file:
+            return
+
+        points = []
         try:
-            points_file = filedialog.askopenfilename(
-                initialdir=WORK_FOLDER,
-                title="Выберите файл точек из Mach3",
-                filetypes=(("Текстовые файлы", "*.txt"), ("Все файлы", "*.*"))
-            )
-            
-            if not points_file:
-                return
+            with open(points_file, 'r', encoding='cp1251') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        parts = line.split(',')
+                        if len(parts) >= 2:
+                            try:
+                                x = float(parts[0])
+                                y = float(parts[1])
+                                z = float(parts[2]) if len(parts) >= 3 else 0.0
+                                points.append((x, y, z))
+                            except ValueError:
+                                continue
+        except (IOError, UnicodeDecodeError) as e:
+            raise IOError(f"Ошибка чтения файла (проверьте кодировку): {str(e)}")
 
-            points = []
-            try:
-                with open(points_file, 'r', encoding='cp1251') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            parts = line.split(',')
-                            if len(parts) >= 2:
-                                try:
-                                    points.append((float(parts[0]), float(parts[1]), 0.0))
-                                except ValueError:
-                                    continue
-            except (IOError, UnicodeDecodeError) as e:
-                raise IOError(f"Ошибка чтения файла (проверьте кодировку): {str(e)}")
+        if len(points) < 2:
+            raise ValueError("Необходимо минимум 2 точки")
 
-            if len(points) < 2:
-                raise ValueError("Необходимо минимум 2 точки")
+        # Создаем DXF вручную для точного соответствия формату
+        dxf_content = [
+            "0",
+            "SECTION",
+            "2",
+            "ENTITIES",
+            "0",
+            "POLYLINE",
+            "8",  # Слой
+            "0",  # Имя слоя (по умолчанию)
+            "66",  # Флаг "фиксированного" количества вершин
+            "1",
+            "70",  # Тип полилинии (0 = обычная)
+            "0",
+        ]
 
-            doc = ezdxf.new("R2010")
-            msp = doc.modelspace()
-            msp.add_polyline2d([(x, y) for x, y, _ in points])
-            
-            filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
-            filepath = os.path.join(WORK_FOLDER, filename)
-            
-            try:
-                doc.saveas(filepath)
-            except IOError as e:
-                raise IOError(f"Не удалось сохранить DXF-файл: {str(e)}")
+        # Добавляем вершины (VERTEX)
+        for x, y, z in points:
+            dxf_content.extend([
+                "0",
+                "VERTEX",
+                "8",
+                "0",  # Слой
+                "10",  # X
+                f"{x:.5f}",
+                "20",  # Y
+                f"{y:.5f}",
+                "30",  # Z
+                f"{z:.5f}",
+                "70",  # Флаги вершины
+                "32",  # 32 = контрольная точка полилинии
+            ])
 
-            messagebox.showinfo(
-                "Готово!",
-                f"DXF-файл создан:\n{filepath}\n"
-                f"Точек: {len(points)}"
-            )
-        except Exception as e:
-            messagebox.showerror("Ошибка", str(e))
+        # Завершаем полилинию
+        dxf_content.extend([
+            "0",
+            "SEQEND",
+            "0",
+            "ENDSEC",
+            "0",
+            "EOF"
+        ])
 
+        filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
+        filepath = os.path.join(WORK_FOLDER, filename)
+        
+        try:
+            with open(filepath, "w", encoding='ascii') as f:
+                f.write("\n".join(dxf_content))
+        except IOError as e:
+            raise IOError(f"Не удалось сохранить DXF-файл: {str(e)}")
+
+        messagebox.showinfo(
+            "Готово!",
+            f"DXF-файл создан в классическом формате:\n{filepath}\n"
+            f"Точек: {len(points)}"
+        )
+    except Exception as e:
+        messagebox.showerror("Ошибка", str(e))
+        
     def center_window(self):
         self.root.update_idletasks()
         width = self.root.winfo_width()
