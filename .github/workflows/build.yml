@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # Актуальная версия
 
       - name: Install Python 3.4 (x86)
         run: |
@@ -25,15 +25,16 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller \
-            --onefile \
-            --windowed \
-            --name IvanorProScan \
-            --icon=IMG_8028.ico \
+          pyinstaller ^
+            --onefile ^
+            --windowed ^
+            --name IvanorProScan ^
+            --icon=IMG_8028.ico ^
             GovnaPiroga.py
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # Используем v4 вместо v3
         with:
           name: IvanorProScan-Win7-x86
           path: dist/IvanorProScan.exe
+
