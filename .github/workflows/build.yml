@@ -1,7 +1,7 @@
 name: Build EXE for Windows 7
 
 on:
-  workflow_dispatch:  # Можно запускать вручную
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -10,38 +10,40 @@ jobs:
   build:
     runs-on: windows-2019
     timeout-minutes: 30
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    # Устанавливаем Python 3.4 вручную
+
+    # Установка Python 3.4.4
     - name: Install Python 3.4.4
       run: |
         $url = "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi"
         $path = "$env:TEMP\python34.msi"
-        Invoke-WebRequest $url -OutFile $path
+        (New-Object Net.WebClient).DownloadFile($url, $path)
         Start-Process msiexec.exe -Wait -ArgumentList "/i $path /quiet"
         echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
-    
-    # Скачиваем pip и PyInstaller вручную (старые версии)
+
+    # Установка зависимостей
     - name: Install dependencies
       run: |
-        # Скачиваем pip 9.0.3
-        Invoke-WebRequest https://bootstrap.pypa.io/3.4/get-pip.py -OutFile get-pip.py
-        python get-pip.py "pip==9.0.3"
-        
-        # Скачиваем PyInstaller 3.6
-        Invoke-WebRequest https://files.pythonhosted.org/packages/6d/7f/133e6eaefd1e2b4f4a856d3275f789e9849522b258bfe9bb5aaebc50073e/PyInstaller-3.6.tar.gz -OutFile pyinstaller.tar.gz
-        pip install pyinstaller.tar.gz
-        
-        # Устанавливаем ezdxf
-        pip install "ezdxf==0.17.2"
-    
+        # Альтернативный способ установки pip
+        (New-Object Net.WebClient).DownloadFile(
+          "https://bootstrap.pypa.io/pip/3.4/get-pip.py",
+          "$env:TEMP\get-pip.py"
+        )
+        python "$env:TEMP\get-pip.py"
+
+        # Установка PyInstaller и ezdxf
+        python -m pip install "https://files.pythonhosted.org/packages/6d/7f/133e6eaefd1e2b4f4a856d3275f789e9849522b258bfe9bb5aaebc50073e/PyInstaller-3.6.tar.gz"
+        python -m pip install "ezdxf==0.17.2"
+
+    # Сборка EXE
     - name: Build EXE
       run: |
-        pyinstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
-    
+        python -m PyInstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
+
+    # Загрузка артефакта
     - name: Upload EXE
       uses: actions/upload-artifact@v4
       with:
