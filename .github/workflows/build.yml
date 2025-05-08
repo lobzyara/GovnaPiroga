@@ -2,11 +2,8 @@ name: Build GovnaPiroga for Windows 7 x86
 
 on:
   push:
-    branches:  # Запуск при пуше в любую ветку
-      - main
-      - master
-      - develop
-  workflow_dispatch:  # Ручной запуск
+    branches: [ main, master, develop ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,14 +11,21 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        python-version: ["3.7"]  # Python 3.7 x86
+        python-version: ["3.7"]
     
     steps:
-      - name: Checkout code (включая иконку)
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4  # Обновлено до v4
+
+      - name: Verify icon exists
+        run: |
+          if not exist IMG_8028.ico (
+            echo "::error::Icon file IMG_8028.ico not found!"
+            exit 1
+          )
 
       - name: Set up Python 3.7 (32-bit)
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5  # Обновлено до v5
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x86
@@ -29,19 +33,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller==4.10 ezdxf==0.17.2 tkinter
+          pip install pyinstaller==4.10 ezdxf==0.17.2
 
-      - name: Build EXE with PyInstaller (с иконкой)
+      - name: Build EXE
         run: |
-          pyinstaller \
-            --onefile \
-            --windowed \
-            --name GovnaPiroga_Win7 \
-            --icon=IMG_8028.ico \  # Указываем вашу иконку
-            GovnaPiroga.py  # Собираем ваш основной файл
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --name GovnaPiroga_Win7 `
+            --icon=IMG_8028.ico `
+            GovnaPiroga.py
 
-      - name: Upload artifact (EXE)
-        uses: actions/upload-artifact@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4  # Обновлено до v4
         with:
           name: GovnaPiroga_Win7
           path: dist/GovnaPiroga_Win7.exe
