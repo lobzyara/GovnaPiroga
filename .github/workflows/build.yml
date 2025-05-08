@@ -8,11 +8,12 @@ on:
 jobs:
   build:
     runs-on: windows-2019
+    timeout-minutes: 30
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
-    
+      uses: actions/checkout@v4  # Обновлено до v4
+      
     - name: Install Python 3.4.4 (32-bit)
       run: |
         $pythonUrl = "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi"
@@ -21,17 +22,22 @@ jobs:
         Start-Process -Wait -FilePath "msiexec.exe" -ArgumentList "/i $installerPath /quiet"
         Add-Content $env:GITHUB_PATH "C:\Python34;C:\Python34\Scripts"
         
+    - name: Verify Python
+      run: |
+        python --version
+        pip --version
+        
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip==9.0.3
-        pip install -r requirements.txt
+        pip install pyinstaller==3.6 ezdxf==0.17.2
         
     - name: Build EXE
       run: |
         pyinstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
         
     - name: Upload EXE
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4  # Обновлено до v4
       with:
         name: GovnaPiroga-Win7
         path: dist/GovnaPiroga.exe
