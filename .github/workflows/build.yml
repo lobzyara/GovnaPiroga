@@ -1,40 +1,47 @@
-name: Build IvanorProScan (Python 3.4)
+name: Build GovnaPiroga for Windows 7 x86
 
 on:
-  push: {}  # Запуск при ЛЮБОМ пуше (в любую ветку)
-  pull_request: {}  # Опционально: можно добавить триггер на PR
+  push:
+    branches:  # Запуск при пуше в любую ветку
+      - main
+      - master
+      - develop
   workflow_dispatch:  # Ручной запуск
 
 jobs:
   build:
+    name: Build EXE for Win7 x86
     runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: ["3.7"]  # Python 3.7 x86
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4  # Актуальная версия
+      - name: Checkout code (включая иконку)
+        uses: actions/checkout@v2
 
-      - name: Install Python 3.4 (x86)
-        run: |
-          Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi" -OutFile "python-3.4.4.msi"
-          Start-Process msiexec.exe -Wait -ArgumentList '/i python-3.4.4.msi /quiet TARGETDIR=C:\Python34'
-          echo "C:\Python34;C:\Python34\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Set up Python 3.7 (32-bit)
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x86
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip==9.0.3
-          pip install pyinstaller==3.6 ezdxf==0.17.2
+          python -m pip install --upgrade pip
+          pip install pyinstaller==4.10 ezdxf==0.17.2 tkinter
 
-      - name: Build EXE with PyInstaller
+      - name: Build EXE with PyInstaller (с иконкой)
         run: |
-          pyinstaller ^
-            --onefile ^
-            --windowed ^
-            --name IvanorProScan ^
-            --icon=IMG_8028.ico ^
-            GovnaPiroga.py
+          pyinstaller \
+            --onefile \
+            --windowed \
+            --name GovnaPiroga_Win7 \
+            --icon=IMG_8028.ico \  # Указываем вашу иконку
+            GovnaPiroga.py  # Собираем ваш основной файл
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4  # Используем v4 вместо v3
+      - name: Upload artifact (EXE)
+        uses: actions/upload-artifact@v2
         with:
-          name: IvanorProScan-Win7-x86
-          path: dist/IvanorProScan.exe
-
+          name: GovnaPiroga_Win7
+          path: dist/GovnaPiroga_Win7.exe
