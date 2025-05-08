@@ -1,4 +1,4 @@
-name: Build EXE for Windows 7 SP1 x86
+name: Build EXE for Windows 7
 
 on: push
 
@@ -11,31 +11,19 @@ jobs:
     - uses: actions/checkout@v4
 
     # Установка Python 3.4.4
-    - name: Install Python
+    - name: Install Python 3.4
       run: |
-        # Скачиваем и устанавливаем Python
-        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi" -OutFile "python34.msi"
-        Start-Process -Wait -FilePath "msiexec.exe" -ArgumentList "/i python34.msi /quiet"
-        
-        # Добавляем Python в PATH
-        $pythonPath = "C:\Python34"
-        $env:PATH = "$pythonPath;$env:PATH"
-        echo "$pythonPath" >> $env:GITHUB_PATH
+        Invoke-WebRequest https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi -OutFile python34.msi
+        Start-Process msiexec.exe -Wait -ArgumentList '/i python34.msi /quiet'
+        echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
 
-    # Установка зависимостей
+    # Установка всех зависимостей ВРУЧНУЮ
     - name: Install dependencies
       run: |
-        # Проверяем, что Python доступен
-        python --version
-        
-        # Устанавливаем pip
-        python -m ensurepip --default-pip
-        python -m pip install --upgrade "pip==9.0.3"
-        
-        # Устанавливаем необходимые пакеты
-        python -m pip install "pypiwin32==219" "pywin32-ctypes==0.2.0"
-        
-        # Устанавливаем PyInstaller
+        # Скачиваем и устанавливаем ВСЕ зависимости вручную
+        python -m pip install "https://files.pythonhosted.org/packages/1e/9a/31e9e5b4a7505e2871a7d9a1f7023f1b0b518a0e4f1e9b85c6a61f5eb0d2/altgraph-0.10.2-py2.py3-none-any.whl"
+        python -m pip install "https://files.pythonhosted.org/packages/3c/b9/0b3159f5e2c7b8c5b9e3d7b5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5/pefile-2016.3.28.tar.gz"
+        python -m pip install "https://files.pythonhosted.org/packages/3c/b9/0b3159f5e2c7b8c5b9e3d7b5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5/pypiwin32-219-cp34-none-win32.whl"
         python -m pip install "https://github.com/pyinstaller/pyinstaller/archive/v3.6.zip"
 
     # Сборка EXE
