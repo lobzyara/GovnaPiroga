@@ -1,51 +1,29 @@
-name: Build EXE for Windows 7
+name: Build EXE
 
-on:
-  workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+on: push  # Автосборка при любом push
 
 jobs:
   build:
     runs-on: windows-2019
-    timeout-minutes: 30
-
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    # Установка Python 3.4.4
-    - name: Install Python 3.4.4
+    # 1. Копируем файлы проекта
+    - uses: actions/checkout@v4
+    
+    # 2. Устанавливаем Python 3.4.4 (официальный установщик)
+    - name: Install Python 3.4
       run: |
-        $url = "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi"
-        $path = "$env:TEMP\python34.msi"
-        (New-Object Net.WebClient).DownloadFile($url, $path)
-        Start-Process msiexec.exe -Wait -ArgumentList "/i $path /quiet"
+        Invoke-WebRequest https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi -OutFile python34.msi
+        Start-Process msiexec.exe -Wait -ArgumentList '/i python34.msi /quiet'
         echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
-
-    # Установка зависимостей
-    - name: Install dependencies
-      run: |
-        # Альтернативный способ установки pip
-        (New-Object Net.WebClient).DownloadFile(
-          "https://bootstrap.pypa.io/pip/3.4/get-pip.py",
-          "$env:TEMP\get-pip.py"
-        )
-        python "$env:TEMP\get-pip.py"
-
-        # Установка PyInstaller и ezdxf
-        python -m pip install "https://files.pythonhosted.org/packages/6d/7f/133e6eaefd1e2b4f4a856d3275f789e9849522b258bfe9bb5aaebc50073e/PyInstaller-3.6.tar.gz"
-        python -m pip install "ezdxf==0.17.2"
-
-    # Сборка EXE
+    
+    # 3. Собираем EXE (PyInstaller уже встроен в Python 3.4)
     - name: Build EXE
       run: |
-        python -m PyInstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
-
-    # Загрузка артефакта
-    - name: Upload EXE
-      uses: actions/upload-artifact@v4
+        C:\Python34\python.exe -m PyInstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
+    
+    # 4. Выдаём готовый файл
+    - uses: actions/upload-artifact@v4
       with:
-        name: GovnaPiroga_Win7
+        name: GovnaPiroga_Win7.exe
         path: dist/GovnaPiroga.exe
