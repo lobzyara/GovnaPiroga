@@ -23,7 +23,36 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10 ezdxf==0.17.2
 
-      - name: Build EXE (правильный способ)
+      - name: Find Python DLLs
+        id: find-dlls
+        run: |
+          $pythonDir = Split-Path -Path (Get-Command python).Path
+          $dlls = @(
+              "$pythonDir\python37.dll",
+              "$pythonDir\DLLs\tcl86t.dll",
+              "$pythonDir\DLLs\tk86t.dll",
+              "$pythonDir\DLLs\_tkinter.pyd",
+              "$pythonDir\DLLs\_ctypes.pyd",
+              "$pythonDir\DLLs\_ssl.pyd"
+          )
+          
+          $existingDlls = $dlls | Where-Object { Test-Path $_ }
+          if ($existingDlls.Count -eq 0) {
+              echo "::error::No DLLs found in $pythonDir"
+              exit 1
+          }
+          
+          echo "Found DLLs:"
+          $existingDlls | ForEach-Object { echo $_ }
+          
+          # Сохраняем пути через JSON для корректной передачи
+          $dllMapping = $existingDlls | ForEach-Object {
+              "$($_);."
+          }
+          echo "dll_mapping=$($dllMapping -join ' ')" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Build EXE
         shell: cmd
         run: |
           pyinstaller ^
@@ -31,10 +60,8 @@ jobs:
             --windowed ^
             --name IvanorProScan ^
             --icon=IMG_8028.ico ^
-            --paths "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs" ^
-            --add-binary "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\python37.dll;." ^
-            --add-binary "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tcl86t.dll;." ^
-            --add-binary "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tk86t.dll;." ^
+            ${{ steps.find-dlls.outputs.dll_mapping }} ^
+            --add-data "venv/Lib/site-packages/ezdxf;ezdxf" ^
             GovnaPiroga.py
 
       - name: Upload artifact
