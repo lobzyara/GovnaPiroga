@@ -1,29 +1,42 @@
 name: Build EXE
 
-on: push  # Автосборка при любом push
+on: push  # Автоматическая сборка при загрузке кода
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2019  # Windows Server 2019 (совместим с Win7)
     
     steps:
-    # 1. Копируем файлы проекта
+    # 1. Загружаем файлы проекта
     - uses: actions/checkout@v4
     
     # 2. Устанавливаем Python 3.4.4 (официальный установщик)
     - name: Install Python 3.4
       run: |
-        Invoke-WebRequest https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi -OutFile python34.msi
-        Start-Process msiexec.exe -Wait -ArgumentList '/i python34.msi /quiet'
+        # Скачиваем Python
+        curl -L -o python34.msi https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi
+        # Тихая установка
+        msiexec /i python34.msi /quiet
+        # Добавляем Python в PATH
         echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
     
-    # 3. Собираем EXE (PyInstaller уже встроен в Python 3.4)
+    # 3. Скачиваем и распаковываем PyInstaller 3.6 вручную
+    - name: Setup PyInstaller
+      run: |
+        # Качаем PyInstaller
+        curl -L -o pyinstaller.zip https://github.com/pyinstaller/pyinstaller/archive/v3.6.zip
+        # Распаковываем
+        tar -xf pyinstaller.zip -C C:\Python34\Lib\site-packages
+        # Переименовываем папку для удобства
+        ren C:\Python34\Lib\site-packages\pyinstaller-3.6 PyInstaller
+    
+    # 4. Собираем EXE
     - name: Build EXE
       run: |
-        C:\Python34\python.exe -m PyInstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
+        C:\Python34\python.exe C:\Python34\Lib\site-packages\PyInstaller\pyinstaller.py --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
     
-    # 4. Выдаём готовый файл
+    # 5. Выгружаем EXE
     - uses: actions/upload-artifact@v4
       with:
-        name: GovnaPiroga_Win7.exe
+        name: GovnaPiroga.exe
         path: dist/GovnaPiroga.exe
