@@ -1,44 +1,50 @@
-name: Build EXE
+name: Build EXE for Windows 7 SP1 x86
 
-on: push  # Автосборка при любом изменении кода
+on: push
 
 jobs:
   build:
     runs-on: windows-2019
     timeout-minutes: 30
-    
+
     steps:
-    # 1. Копируем файлы проекта
     - uses: actions/checkout@v4
-    
-    # 2. Устанавливаем Python 3.4.4
-    - name: Install Python 3.4.4
+
+    # Установка Python 3.4.4
+    - name: Install Python
       run: |
-        curl -L -o python34.msi https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi
-        msiexec /i python34.msi /quiet
-        echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
-    
-    # 3. Вручную ставим ВСЕ зависимости
+        # Скачиваем и устанавливаем Python
+        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi" -OutFile "python34.msi"
+        Start-Process -Wait -FilePath "msiexec.exe" -ArgumentList "/i python34.msi /quiet"
+        
+        # Добавляем Python в PATH
+        $pythonPath = "C:\Python34"
+        $env:PATH = "$pythonPath;$env:PATH"
+        echo "$pythonPath" >> $env:GITHUB_PATH
+
+    # Установка зависимостей
     - name: Install dependencies
       run: |
+        # Проверяем, что Python доступен
+        python --version
+        
         # Устанавливаем pip
-        curl -L -o get-pip.py https://bootstrap.pypa.io/pip/3.4/get-pip.py
-        C:\Python34\python.exe get-pip.py
+        python -m ensurepip --default-pip
+        python -m pip install --upgrade "pip==9.0.3"
         
-        # Ставим pywin32 и pywin32-ctypes
-        C:\Python34\python.exe -m pip install pypiwin32==219
-        C:\Python34\python.exe -m pip install pywin32-ctypes==0.2.0
+        # Устанавливаем необходимые пакеты
+        python -m pip install "pypiwin32==219" "pywin32-ctypes==0.2.0"
         
-        # Ставим PyInstaller 3.6
-        C:\Python34\python.exe -m pip install https://github.com/pyinstaller/pyinstaller/archive/v3.6.zip
-    
-    # 4. Собираем EXE
+        # Устанавливаем PyInstaller
+        python -m pip install "https://github.com/pyinstaller/pyinstaller/archive/v3.6.zip"
+
+    # Сборка EXE
     - name: Build EXE
       run: |
-        C:\Python34\python.exe -m PyInstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
-    
-    # 5. Выгружаем результат
+        python -m PyInstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
+
+    # Выгрузка результата
     - uses: actions/upload-artifact@v4
       with:
-        name: GovnaPiroga_Win7.exe
+        name: GovnaPiroga_Win7
         path: dist/GovnaPiroga.exe
