@@ -24,9 +24,10 @@ jobs:
           pip install pyinstaller==4.10 ezdxf==0.17.2
 
       - name: Build EXE with all DLLs
+        shell: cmd  # Явно указываем использовать CMD вместо PowerShell
         run: |
-          copy "C:\Python37\DLLs\*" "." /Y
-          pyinstaller --onefile --windowed --name IvanorProScan --icon=IMG_8028.ico --add-data "*.dll;." --add-data "venv/Lib/site-packages/ezdxf;ezdxf" GovnaPiroga.py
+          xcopy /Y "C:\Python37\DLLs\*.*" ".\"
+          pyinstaller --onefile --windowed --name IvanorProScan --icon=IMG_8028.ico --add-data "*.dll;." --add-data "venv\Lib\site-packages\ezdxf;ezdxf" GovnaPiroga.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
