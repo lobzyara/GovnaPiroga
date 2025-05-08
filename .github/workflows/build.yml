@@ -1,4 +1,4 @@
-name: Build Windows 7 EXE
+name: Build EXE
 
 on:
   push:
@@ -8,36 +8,25 @@ on:
 jobs:
   build:
     runs-on: windows-2019
-    timeout-minutes: 30
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4  # Обновлено до v4
+      - uses: actions/checkout@v4
       
-    - name: Install Python 3.4.4 (32-bit)
-      run: |
-        $pythonUrl = "https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi"
-        $installerPath = "$env:TEMP\python-3.4.4.msi"
-        Invoke-WebRequest -Uri $pythonUrl -OutFile $installerPath
-        Start-Process -Wait -FilePath "msiexec.exe" -ArgumentList "/i $installerPath /quiet"
-        Add-Content $env:GITHUB_PATH "C:\Python34;C:\Python34\Scripts"
-        
-    - name: Verify Python
-      run: |
-        python --version
-        pip --version
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip==9.0.3
-        pip install pyinstaller==3.6 ezdxf==0.17.2
-        
-    - name: Build EXE
-      run: |
-        pyinstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
-        
-    - name: Upload EXE
-      uses: actions/upload-artifact@v4  # Обновлено до v4
-      with:
-        name: GovnaPiroga-Win7
-        path: dist/GovnaPiroga.exe
+      - name: Install Python 3.4
+        run: |
+          Invoke-WebRequest https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi -OutFile python.msi
+          Start-Process msiexec.exe -Wait -ArgumentList '/i python.msi /quiet'
+          echo "C:\Python34;C:\Python34\Scripts" >> $env:GITHUB_PATH
+          
+      - name: Install PyInstaller
+        run: |
+          python -m pip install pyinstaller==3.6
+          
+      - name: Build EXE
+        run: |
+          pyinstaller --onefile --noconsole --icon=IMG_8028.ico GovnaPiroga.py
+          
+      - name: Upload EXE
+        uses: actions/upload-artifact@v3
+        with:
+          name: MyApp
+          path: dist/GovnaPiroga.exe
