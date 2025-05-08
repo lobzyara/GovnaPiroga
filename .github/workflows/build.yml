@@ -23,7 +23,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10 ezdxf==0.17.2
 
-      - name: Build EXE (исправленная версия)
+      - name: Prepare DLLs
+        shell: cmd
+        run: |
+          @echo Полный путь к Python:
+          where python
+          
+          @echo Копируем необходимые DLL...
+          xcopy /Y "C:\hostedtoolcache\windows\Python\3.7.9\x86\python37.dll" .
+          xcopy /Y "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tcl86t.dll" .
+          xcopy /Y "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tk86t.dll" .
+          
+          @echo Проверяем наличие файлов:
+          dir *.dll
+
+      - name: Build EXE
         shell: cmd
         run: |
           pyinstaller ^
@@ -31,16 +45,11 @@ jobs:
             --windowed ^
             --name IvanorProScan ^
             --icon=IMG_8028.ico ^
+            --paths "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs" ^
             --add-binary "python37.dll;." ^
-            --add-binary "DLLs/tcl86t.dll;." ^
-            --add-binary "DLLs/tk86t.dll;." ^
-            --add-data "venv/Lib/site-packages/ezdxf;ezdxf" ^
+            --add-binary "tcl86t.dll;." ^
+            --add-binary "tk86t.dll;." ^
             GovnaPiroga.py
-
-      - name: Verify files
-        run: |
-          dir /s /b *.dll
-          dir /s /b *.pyd
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
