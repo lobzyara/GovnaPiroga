@@ -28,7 +28,7 @@ class COXOproScan:
         
     def setup_ui(self):
         self.root.title("COXOproScan v3.4 (Win7 x86)")
-        self.root.geometry("400x700")
+        self.root.geometry("400x650")  # Немного уменьшил высоту окна
         self.root.resizable(False, False)
         self.center_window()
         
@@ -53,9 +53,13 @@ class COXOproScan:
         main_frame.pack(fill=tk.X, pady=5, anchor="w")
         
         self.add_param(main_frame, "scan_length", "Общая длина сканирования (мм):", 0)
-        self.add_param(main_frame, "probe_depth", "Глубина зондирования (мм):", 1)
-        self.add_param(main_frame, "retract", "Величина отвода (мм):", 2)
-        self.add_param(main_frame, "speed", "Скорость (мм/мин):", 3)
+        self.add_param(main_frame, "retract", "Величина отвода (мм):", 1)
+        self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
+        
+        # Параметр "Глубина зондирования" под стрелочкой
+        self.probe_depth_frame = ttk.LabelFrame(main_container, text="▼ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▼", padding=10)
+        self.probe_depth_frame.pack(fill=tk.X, pady=5, anchor="w")
+        self.add_param(self.probe_depth_frame, "probe_depth", "Глубина зондирования (мм):", 0)
 
         # Стартовая зона
         start_frame = ttk.LabelFrame(main_container, text="СТАРТОВАЯ ЗОНА", padding=10)
@@ -130,19 +134,23 @@ class COXOproScan:
             w.state(["!disabled" if self.params[d].get() else "disabled"]))
 
     def reset_settings(self):
+        # Сохраняем текущее значение глубины зондирования
+        current_probe_depth = self.params["probe_depth"].get()
+        
         defaults = {
-            "scan_length": 100.0,
-            "probe_depth": 20.0,
-            "retract": 5.0,
-            "speed": 300.0,
-            "use_start_zone": True,
-            "start_zone_length": 10.0,
-            "start_zone_step": 0.5,
-            "main_zone_step": 2.0,
-            "use_end_zone": True,
-            "end_zone_length": 10.0,
-            "end_zone_step": 0.5
+            "scan_length": 0.0,
+            "retract": 0.0,
+            "speed": 0.0,
+            "use_start_zone": False,
+            "start_zone_length": 0.0,
+            "start_zone_step": 0.0,
+            "main_zone_step": 0.0,
+            "use_end_zone": False,
+            "end_zone_length": 0.0,
+            "end_zone_step": 0.0,
+            "probe_depth": current_probe_depth  # Сохраняем текущее значение
         }
+        
         for name, var in self.params.items():
             if name in defaults:
                 var.set(defaults[name])
@@ -328,4 +336,6 @@ class COXOproScan:
 if __name__ == "__main__":
     root = tk.Tk()
     app = COXOproScan(root)
+    # Устанавливаем глубину зондирования по умолчанию 20.0
+    app.params["probe_depth"].set(20.0)
     root.mainloop()
