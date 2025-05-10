@@ -44,7 +44,7 @@ jobs:
             --onefile ^
             --windowed ^
             --name IvanorProScan ^
-            --icon=IMG_8028.ico ^
+            --icon=IMG_8084.ico ^
             --paths "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs" ^
             --add-binary "python37.dll;." ^
             --add-binary "tcl86t.dll;." ^
