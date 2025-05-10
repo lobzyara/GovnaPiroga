@@ -1,4 +1,4 @@
-name: Build IvanorProScan (Windows x86)
+name: Build COXOproScan (Windows x86)
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
           pyinstaller ^
             --onefile ^
             --windowed ^
-            --name IvanorProScan ^
+            --name COXOproScan ^
             --icon=IMG_8084.ico ^
             --paths "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs" ^
             --add-binary "python37.dll;." ^
@@ -54,5 +54,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IvanorProScan-Win7-Full
-          path: dist/IvanorProScan.exe
+          name: COXOproScan-Win7-Full
+          path: dist/COXOproScan.exe
