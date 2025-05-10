@@ -12,14 +12,14 @@ if sys.version_info < (3, 4):
 
 # Настройки папки
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
-WORK_FOLDER = os.path.join(DESKTOP, "IvanorProScan")
+WORK_FOLDER = os.path.join(DESKTOP, "COXOproScan")
 if not os.path.exists(WORK_FOLDER):
     try:
         os.makedirs(WORK_FOLDER)
     except OSError as e:
         raise RuntimeError(f"Не удалось создать рабочую папку: {str(e)}")
 
-class IvanorProScan:
+class COXOproScan:
     def __init__(self, root):
         self.root = root
         self.params = {}
@@ -27,7 +27,7 @@ class IvanorProScan:
         self.reset_settings()
         
     def setup_ui(self):
-        self.root.title("IvanorProScan v3.4 (Win7 x86)")
+        self.root.title("COXOproScan v3.4 (Win7 x86)")
         self.root.geometry("850x600")
         self.root.resizable(False, False)
         self.center_window()
@@ -179,6 +179,7 @@ class IvanorProScan:
             y_pos = 0.0
             total_length = params["scan_length"]
 
+            # Стартовая зона
             if params["use_start_zone"] and params["start_zone_length"] > 0:
                 start_steps = int(params["start_zone_length"] / params["start_zone_step"])
                 start_remainder = params["start_zone_length"] % params["start_zone_step"]
@@ -195,6 +196,7 @@ class IvanorProScan:
                     gcode.append(f"G0Y{start_remainder}")
                     y_pos += start_remainder
 
+            # Основная зона
             main_zone_length = total_length - params["start_zone_length"] - params["end_zone_length"]
             main_steps = int(main_zone_length / params["main_zone_step"])
             main_remainder = main_zone_length % params["main_zone_step"]
@@ -211,6 +213,7 @@ class IvanorProScan:
                 gcode.append(f"G0Y{main_remainder}")
                 y_pos += main_remainder
 
+            # Конечная зона
             if params["use_end_zone"] and params["end_zone_length"] > 0:
                 end_steps = int(params["end_zone_length"] / params["end_zone_step"])
                 end_remainder = params["end_zone_length"] % params["end_zone_step"]
@@ -227,21 +230,20 @@ class IvanorProScan:
                     gcode.append(f"G0Y{end_remainder}")
                     y_pos += end_remainder
 
+            # Завершение
             gcode.extend([
                 "G90",
                 "G0X0",
                 "G0Y0",
+                "(* выберете название файла сканирования *)",  # Добавленная строка
                 "M30"
             ])
 
             filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tap"
             filepath = os.path.join(WORK_FOLDER, filename)
             
-            try:
-                with open(filepath, "w", encoding='cp1251') as f:
-                    f.write("\n".join(gcode))
-            except (IOError, UnicodeEncodeError) as e:
-                raise IOError(f"Не удалось сохранить файл (проверьте кодировку): {str(e)}")
+            with open(filepath, "w", encoding='cp1251') as f:
+                f.write("\n".join(gcode))
 
             messagebox.showinfo(
                 "Готово!",
@@ -267,83 +269,37 @@ class IvanorProScan:
                 return
 
             points = []
-            try:
-                with open(points_file, 'r', encoding='cp1251') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            parts = line.split(',')
-                            if len(parts) >= 2:
-                                try:
-                                    x = float(parts[0].strip())
-                                    y = float(parts[1].strip())
-                                    z = float(parts[2].strip()) if len(parts) >= 3 else 0.0
-                                    points.append((x, y, z))
-                                except ValueError:
-                                    continue
-            except (IOError, UnicodeDecodeError) as e:
-                raise IOError(f"Ошибка чтения файла (проверьте кодировку): {str(e)}")
+            with open(points_file, 'r', encoding='cp1251') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        parts = line.split(',')
+                        if len(parts) >= 2:
+                            try:
+                                x = float(parts[0].strip())
+                                y = float(parts[1].strip())
+                                z = float(parts[2].strip()) if len(parts) >= 3 else 0.0
+                                points.append((x, y, z))
+                            except ValueError:
+                                continue
 
             if len(points) < 2:
                 raise ValueError("Необходимо минимум 2 точки")
 
-            # Формируем DXF вручную
-            dxf_lines = [
-                "0",
-                "SECTION",
-                "2",
-                "ENTITIES",
-                "0",
-                "POLYLINE",
-                "8",  # Слой
-                "0",  # Имя слоя
-                "66",  # Флаг фиксированного количества вершин
-                "1",
-                "70",  # Тип полилинии
-                "0",   # 0 = обычная полилиния
-            ]
+            # Создаем DXF документ
+            doc = ezdxf.new('R2010')
+            msp = doc.modelspace()
 
-            # Добавляем вершины
-            for x, y, z in points:
-                dxf_lines.extend([
-                    "0",
-                    "VERTEX",
-                    "8",
-                    "0",  # Слой
-                    "10",  # X
-                    f"{x:.5f}",
-                    "20",  # Y
-                    f"{y:.5f}",
-                    "30",  # Z
-                    f"{z:.5f}",
-                    "70",  # Флаги вершины
-                    "32",  # 32 = контрольная точка
-                ])
-
-            # Завершаем полилинию
-            dxf_lines.extend([
-                "0",
-                "SEQEND",
-                "8",
-                "0",
-                "0",
-                "ENDSEC",
-                "0",
-                "EOF"
-            ])
+            # Добавляем полилинию
+            polyline = msp.add_polyline2d(points)
 
             filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
             filepath = os.path.join(WORK_FOLDER, filename)
-            
-            try:
-                with open(filepath, 'w', encoding='ascii') as f:
-                    f.write("\n".join(dxf_lines))
-            except IOError as e:
-                raise IOError(f"Не удалось сохранить DXF: {str(e)}")
+            doc.saveas(filepath)
 
             messagebox.showinfo(
                 "Готово!",
-                f"DXF создан в классическом формате:\n{filepath}\n"
+                f"DXF создан:\n{filepath}\n"
                 f"Точек: {len(points)}"
             )
         except Exception as e:
@@ -359,5 +315,5 @@ class IvanorProScan:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = IvanorProScan(root)
+    app = COXOproScan(root)
     root.mainloop()
