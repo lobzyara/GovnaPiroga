@@ -28,18 +28,29 @@ class COXOproScan:
         
     def setup_ui(self):
         self.root.title("COXOproScan v3.4 (Win7 x86)")
-        self.root.geometry("850x600")
+        self.root.geometry("400x700")
         self.root.resizable(False, False)
         self.center_window()
         
         # Стили
         style = ttk.Style()
         style.configure("TLabelFrame", font=('Arial', 9, 'bold'))
-        style.configure("Accent.TButton", foreground="white", background="#4CAF50", font=('Arial', 10, 'bold'))
+        style.configure("Black.TButton", 
+                       foreground="white", 
+                       background="black", 
+                       font=('Arial', 10, 'bold'),
+                       padding=5)
+        style.map("Black.TButton",
+                 foreground=[('active', 'white'), ('disabled', 'gray')],
+                 background=[('active', '#333333'), ('disabled', '#cccccc')])
+        
+        # Основной контейнер
+        main_container = ttk.Frame(self.root)
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
         # Основные параметры
-        main_frame = ttk.LabelFrame(self.root, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=10)
-        main_frame.pack(fill=tk.X, padx=10, pady=5)
+        main_frame = ttk.LabelFrame(main_container, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=10)
+        main_frame.pack(fill=tk.X, pady=5, anchor="w")
         
         self.add_param(main_frame, "scan_length", "Общая длина сканирования (мм):", 0)
         self.add_param(main_frame, "probe_depth", "Глубина зондирования (мм):", 1)
@@ -47,56 +58,56 @@ class COXOproScan:
         self.add_param(main_frame, "speed", "Скорость (мм/мин):", 3)
 
         # Стартовая зона
-        start_frame = ttk.LabelFrame(self.root, text="СТАРТОВАЯ ЗОНА", padding=10)
-        start_frame.pack(fill=tk.X, padx=10, pady=5)
+        start_frame = ttk.LabelFrame(main_container, text="СТАРТОВАЯ ЗОНА", padding=10)
+        start_frame.pack(fill=tk.X, pady=5, anchor="w")
         
         self.add_checkbox(start_frame, "use_start_zone", "Активировать стартовую зону", 0)
         self.add_param(start_frame, "start_zone_length", "Длина зоны (мм):", 1, "use_start_zone")
         self.add_param(start_frame, "start_zone_step", "Шаг (мм):", 2, "use_start_zone")
 
         # Основная зона
-        main_zone_frame = ttk.LabelFrame(self.root, text="ОСНОВНАЯ ЗОНА", padding=10)
-        main_zone_frame.pack(fill=tk.X, padx=10, pady=5)
+        main_zone_frame = ttk.LabelFrame(main_container, text="ОСНОВНАЯ ЗОНА", padding=10)
+        main_zone_frame.pack(fill=tk.X, pady=5, anchor="w")
         
         self.add_param(main_zone_frame, "main_zone_step", "Шаг (мм):", 0)
 
         # Конечная зона
-        end_frame = ttk.LabelFrame(self.root, text="КОНЕЧНАЯ ЗОНА", padding=10)
-        end_frame.pack(fill=tk.X, padx=10, pady=5)
+        end_frame = ttk.LabelFrame(main_container, text="КОНЕЧНАЯ ЗОНА", padding=10)
+        end_frame.pack(fill=tk.X, pady=5, anchor="w")
         
         self.add_checkbox(end_frame, "use_end_zone", "Активировать конечную зону", 0)
         self.add_param(end_frame, "end_zone_length", "Длина зоны (мм):", 1, "use_end_zone")
         self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
 
         # Кнопки
-        btn_frame = ttk.Frame(self.root)
-        btn_frame.pack(fill=tk.X, pady=10)
+        btn_frame = ttk.Frame(main_container)
+        btn_frame.pack(fill=tk.X, pady=10, anchor="w")
         
         ttk.Button(
             btn_frame,
             text="СБРОСИТЬ НАСТРОЙКИ",
-            style="Accent.TButton",
+            style="Black.TButton",
             command=self.reset_settings
-        ).pack(side=tk.LEFT, expand=True, padx=5)
+        ).pack(side=tk.TOP, fill=tk.X, pady=5)
 
         ttk.Button(
             btn_frame,
             text="ГЕНЕРИРОВАТЬ G-КОД",
-            style="Accent.TButton",
+            style="Black.TButton",
             command=self.generate_gcode
-        ).pack(side=tk.LEFT, expand=True, padx=5)
+        ).pack(side=tk.TOP, fill=tk.X, pady=5)
 
         ttk.Button(
-            self.root,
+            btn_frame,
             text="СОЗДАТЬ DXF ДЛЯ ARTCAM",
-            style="Accent.TButton",
+            style="Black.TButton",
             command=self.create_artcam_file
-        ).pack(fill=tk.X, padx=10, pady=5)
+        ).pack(side=tk.TOP, fill=tk.X, pady=5)
 
     def add_param(self, frame, param_name, label_text, row, dependency=None):
         container = ttk.Frame(frame)
-        container.grid(row=row, column=0, sticky="ew", pady=3)
-        ttk.Label(container, text=label_text, width=25, anchor="e").pack(side=tk.LEFT)
+        container.pack(fill=tk.X, pady=2, anchor="w")
+        ttk.Label(container, text=label_text, width=30, anchor="w").pack(side=tk.LEFT)
         var = tk.DoubleVar(value=0.0)
         entry = ttk.Entry(container, textvariable=var, width=10)
         entry.pack(side=tk.LEFT)
@@ -109,7 +120,7 @@ class COXOproScan:
     def add_checkbox(self, frame, param_name, text, row):
         var = tk.BooleanVar(value=False)
         cb = ttk.Checkbutton(frame, text=text, variable=var)
-        cb.grid(row=row, column=0, sticky="w", pady=2, padx=5)
+        cb.pack(anchor="w", pady=2)
         self.params[param_name] = var
         return var
 
@@ -237,7 +248,7 @@ class COXOproScan:
                 "G0Y0",
                 "(* выберете название файла сканирования *)",
                 "M30",
-                ""  # Добавленная пустая строка после M30
+                ""
             ])
 
             filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tap"
