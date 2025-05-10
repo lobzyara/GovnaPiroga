@@ -32,8 +32,6 @@ class COXOproScan:
         self.root.geometry("850x700")
         self.root.resizable(False, False)
         self.center_window()
-        
-        # Стили с черными кнопками
         style = ttk.Style()
         style.configure("TLabelFrame", font=('Arial', 9, 'bold'))
         style.configure("Black.TButton", 
