@@ -23,15 +23,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller==4.10 ezdxf==0.17.2 pillow==9.5.0
 
-      - name: Verify icon
+      - name: Prepare resources
         shell: cmd
         run: |
-          python -c "from PIL import Image; img = Image.open('IMG_8084.ico'); print(f'Icon sizes: {[(w,h) for (w,h) in img.size]}')"
-          if not exist _internal mkdir _internal
-
-      - name: Prepare DLLs
-        shell: cmd
-        run: |
+          python -c "from PIL import Image; img = Image.open('IMG_8084.ico'); print(f'Icon sizes: {img.size}')"
           copy "C:\hostedtoolcache\windows\Python\3.7.9\x86\python37.dll" .
           copy "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tcl86t.dll" .
           copy "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tk86t.dll" .
@@ -54,10 +49,10 @@ jobs:
             --clean ^
             GovnaPiroga.py
 
-      - name: Verify EXE icon
+      - name: Verify EXE
         shell: cmd
         run: |
-          dir dist\COXOproScan.exe
+          dir "dist\COXOproScan.exe"
           python -c "import os; print(f'EXE size: {os.path.getsize(r\"dist\\COXOproScan.exe\") // 1024} KB')"
 
       - name: Upload artifact
