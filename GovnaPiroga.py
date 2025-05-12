@@ -14,7 +14,7 @@ class COXOproScan:
         
     def setup_ui(self):
         self.root.title("COXOproScan v3.4")
-        self.root.geometry("500x700")  # Reduced width since we're removing the right panel
+        self.root.geometry("500x550")  # Уменьшил высоту окна
         self.root.resizable(False, False)
         self.center_window()
         
@@ -35,17 +35,17 @@ class COXOproScan:
         main_container = ttk.Frame(self.root, padding=3)
         main_container.pack(fill=tk.BOTH, expand=True)
 
-        # Верхняя часть (только параметры, без правой панели)
+        # Верхняя часть с параметрами
         top_panel = ttk.Frame(main_container)
-        top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,5))
+        top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,2))  # Уменьшил отступ снизу
 
-        # Панель параметров (теперь занимает всё пространство)
+        # Панель параметров
         left_panel = ttk.Frame(top_panel)
         left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Основные параметры
         main_frame = ttk.LabelFrame(left_panel, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=5)
-        main_frame.pack(fill=tk.X, pady=3)
+        main_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
         
         self.add_param(main_frame, "scan_length", "Общая длина (мм):", 0)
         self.add_param(main_frame, "retract", "Отвод (мм):", 1)
@@ -73,26 +73,26 @@ class COXOproScan:
 
         # Зоны сканирования
         start_frame = ttk.LabelFrame(left_panel, text="СТАРТОВАЯ ЗОНА", padding=5)
-        start_frame.pack(fill=tk.X, pady=3)
+        start_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
         
         self.add_checkbox(start_frame, "use_start_zone", "Активировать", 0)
         self.add_param(start_frame, "start_zone_length", "Длина (мм):", 1, "use_start_zone")
         self.add_param(start_frame, "start_zone_step", "Шаг (мм):", 2, "use_start_zone")
 
         main_zone_frame = ttk.LabelFrame(left_panel, text="ОСНОВНАЯ ЗОНА", padding=5)
-        main_zone_frame.pack(fill=tk.X, pady=3)
+        main_zone_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
         self.add_param(main_zone_frame, "main_zone_step", "Шаг (мм):", 0)
 
         end_frame = ttk.LabelFrame(left_panel, text="КОНЕЧНАЯ ЗОНА", padding=5)
-        end_frame.pack(fill=tk.X, pady=3)
+        end_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
         
         self.add_checkbox(end_frame, "use_end_zone", "Активировать", 0)
         self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
         self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
 
-        # Нижняя панель кнопок
+        # Нижняя панель кнопок (поднята вверх)
         btn_frame = ttk.Frame(main_container)
-        btn_frame.pack(fill=tk.X, pady=(5,0))
+        btn_frame.pack(fill=tk.X, pady=(2,0))  # Минимальный отступ сверху и снизу
         
         ttk.Button(
             btn_frame,
@@ -115,6 +115,7 @@ class COXOproScan:
             command=self.create_artcam_file
         ).pack(side=tk.LEFT, expand=True, padx=2)
 
+    # Остальные методы класса остаются без изменений
     def center_window(self):
         self.root.update_idletasks()
         width = self.root.winfo_width()
