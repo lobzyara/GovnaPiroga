@@ -26,7 +26,7 @@ jobs:
       - name: Prepare resources
         shell: cmd
         run: |
-          python -c "from PIL import Image; img = Image.open('IMG_8084.ico'); print(f'Icon sizes: {img.size}')"
+          python -c "from PIL import Image; img = Image.open('IMG_8084.ico'); print(f'Icon contains sizes: {img.size}')"
           copy "C:\hostedtoolcache\windows\Python\3.7.9\x86\python37.dll" .
           copy "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tcl86t.dll" .
           copy "C:\hostedtoolcache\windows\Python\3.7.9\x86\DLLs\tk86t.dll" .
@@ -52,8 +52,8 @@ jobs:
       - name: Verify EXE
         shell: cmd
         run: |
-          dir "dist\COXOproScan.exe"
-          python -c "import os; print(f'EXE size: {os.path.getsize(r\"dist\\COXOproScan.exe\") // 1024} KB')"
+          dir dist\COXOproScan.exe
+          python -c "import os; print('EXE size:', os.path.getsize('dist/COXOproScan.exe') // 1024, 'KB')"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
