@@ -41,50 +41,44 @@ class COXOproScan:
 
     def setup_ui(self):
         self.root.title("COXOproScan v3.4")
-        self.root.geometry("500x550")
+        self.root.geometry("500x450")  # Уменьшенная высота
         self.root.resizable(False, False)
         self.center_window()
         
+        # Настройка компактных стилей
         style = ttk.Style()
-        style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=5)
+        style.configure(".", padding=1)
+        style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=3)
+        style.configure("TEntry", padding=1, font=('Arial', 8))
+        style.configure("TCheckbutton", font=('Arial', 8))
+        style.configure("TLabel", font=('Arial', 8))
         style.configure("Custom.TButton", 
-                      foreground="black",
-                      background="#f0f0f0",
-                      font=('Arial', 10, 'bold'),
-                      padding=3,
+                      font=('Arial', 9, 'bold'),
+                      padding=2,
                       borderwidth=1)
-        style.map("Custom.TButton",
-                 foreground=[('active', 'black'), ('disabled', 'gray')],
-                 background=[('active', '#e0e0e0'), ('disabled', '#cccccc')])
 
-        main_container = ttk.Frame(self.root, padding=3)
+        main_container = ttk.Frame(self.root, padding=1)
         main_container.pack(fill=tk.BOTH, expand=True)
 
-        top_panel = ttk.Frame(main_container)
-        top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,2))
-
-        left_panel = ttk.Frame(top_panel)
-        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
         # Основные параметры
-        main_frame = ttk.LabelFrame(left_panel, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=5)
-        main_frame.pack(fill=tk.X, pady=2)
+        main_frame = ttk.LabelFrame(main_container, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=3)
+        main_frame.pack(fill=tk.X, pady=1)
         
-        self.add_param(main_frame, "scan_length", "Общая длина (мм):", 0)
+        self.add_param(main_frame, "scan_length", "Длина (мм):", 0)
         self.add_param(main_frame, "retract", "Отвод (мм):", 1)
         self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
         
-        # Дополнительные параметры (изначально свернуты)
+        # Дополнительные параметры (свернуты)
         self.additional_params_visible = False
-        self.probe_depth_frame = ttk.Frame(left_panel)
+        self.probe_depth_frame = ttk.Frame(main_container)
         self.probe_depth_frame.pack(fill=tk.X, pady=0)
         
         self.additional_params_header = ttk.Label(
             self.probe_depth_frame, 
-            text="▶ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▶",
-            padding=3,
-            font=('Arial', 9, 'bold'),
-            relief="groove",
+            text="▶ ДОП. ПАРАМЕТРЫ ▶",
+            padding=2,
+            font=('Arial', 8, 'bold'),
+            relief="flat",
             cursor="hand2"
         )
         self.additional_params_header.pack(fill=tk.X)
@@ -94,19 +88,19 @@ class COXOproScan:
         self.add_param(self.additional_params_container, "probe_depth", "Глубина (мм):", 0)
 
         # Зоны сканирования
-        start_frame = ttk.LabelFrame(left_panel, text="СТАРТОВАЯ ЗОНА", padding=5)
-        start_frame.pack(fill=tk.X, pady=2)
+        start_frame = ttk.LabelFrame(main_container, text="СТАРТОВАЯ ЗОНА", padding=3)
+        start_frame.pack(fill=tk.X, pady=1)
         
         self.add_checkbox(start_frame, "use_start_zone", "Активировать", 0)
         self.add_param(start_frame, "start_zone_length", "Длина (мм):", 1, "use_start_zone")
         self.add_param(start_frame, "start_zone_step", "Шаг (мм):", 2, "use_start_zone")
 
-        main_zone_frame = ttk.LabelFrame(left_panel, text="ОСНОВНАЯ ЗОНА", padding=5)
-        main_zone_frame.pack(fill=tk.X, pady=2)
+        main_zone_frame = ttk.LabelFrame(main_container, text="ОСНОВНАЯ ЗОНА", padding=3)
+        main_zone_frame.pack(fill=tk.X, pady=1)
         self.add_param(main_zone_frame, "main_zone_step", "Шаг (мм):", 0)
 
-        end_frame = ttk.LabelFrame(left_panel, text="КОНЕЧНАЯ ЗОНА", padding=5)
-        end_frame.pack(fill=tk.X, pady=2)
+        end_frame = ttk.LabelFrame(main_container, text="КОНЕЧНАЯ ЗОНА", padding=3)
+        end_frame.pack(fill=tk.X, pady=1)
         
         self.add_checkbox(end_frame, "use_end_zone", "Активировать", 0)
         self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
@@ -114,28 +108,28 @@ class COXOproScan:
 
         # Кнопки
         btn_frame = ttk.Frame(main_container)
-        btn_frame.pack(fill=tk.X, pady=(2,0))
+        btn_frame.pack(fill=tk.X, pady=(3,0))
         
         ttk.Button(
             btn_frame,
-            text="СБРОСИТЬ",
+            text="СБРОС",
             style="Custom.TButton",
             command=self.reset_settings
-        ).pack(side=tk.LEFT, expand=True, padx=2)
+        ).pack(side=tk.LEFT, expand=True, padx=1)
 
         ttk.Button(
             btn_frame,
             text="G-КОД",
             style="Custom.TButton",
             command=self.generate_gcode
-        ).pack(side=tk.LEFT, expand=True, padx=2)
+        ).pack(side=tk.LEFT, expand=True, padx=1)
 
         ttk.Button(
             btn_frame,
-            text="DXF ДЛЯ ARTCAM",
+            text="DXF",
             style="Custom.TButton",
             command=self.create_artcam_file
-        ).pack(side=tk.LEFT, expand=True, padx=2)
+        ).pack(side=tk.LEFT, expand=True, padx=1)
 
     def center_window(self):
         self.root.update_idletasks()
@@ -147,11 +141,11 @@ class COXOproScan:
 
     def add_param(self, frame, param_name, label_text, row, dependency=None):
         container = ttk.Frame(frame)
-        container.pack(fill=tk.X, pady=1)
-        ttk.Label(container, text=label_text, width=20, anchor="w").pack(side=tk.LEFT)
+        container.pack(fill=tk.X, pady=0)
+        ttk.Label(container, text=label_text, width=16, anchor="w").pack(side=tk.LEFT)
         var = tk.DoubleVar(value=0.0)
         entry = ttk.Entry(container, textvariable=var, width=10)
-        entry.pack(side=tk.LEFT, padx=2)
+        entry.pack(side=tk.LEFT, padx=1)
         self.params[param_name] = var
         if dependency:
             self.toggle_dependency(entry, dependency)
@@ -160,7 +154,7 @@ class COXOproScan:
     def add_checkbox(self, frame, param_name, text, row):
         var = tk.BooleanVar(value=False)
         cb = ttk.Checkbutton(frame, text=text, variable=var)
-        cb.pack(anchor="w", pady=1)
+        cb.pack(anchor="w", pady=0)
         self.params[param_name] = var
         return var
 
@@ -173,10 +167,10 @@ class COXOproScan:
         self.additional_params_visible = not self.additional_params_visible
         if self.additional_params_visible:
             self.additional_params_container.pack(fill=tk.X)
-            self.additional_params_header.config(text="▼ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▼")
+            self.additional_params_header.config(text="▼ ДОП. ПАРАМЕТРЫ ▼")
         else:
             self.additional_params_container.pack_forget()
-            self.additional_params_header.config(text="▶ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▶")
+            self.additional_params_header.config(text="▶ ДОП. ПАРАМЕТРЫ ▶")
         self.root.update_idletasks()
 
     def reset_settings(self):
