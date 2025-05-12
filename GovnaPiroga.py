@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import base64
 import os
 from datetime import datetime
 import ezdxf
@@ -95,13 +94,10 @@ class COXOproScan:
         right_panel = ttk.Frame(top_panel)
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        # Место для вашего Base64-GIF изображения
-        # Вставьте сюда свой код для загрузки изображения
-        
         # Заглушка вместо изображения
         img_placeholder = ttk.Label(
             right_panel, 
-            text="R0lGODlhwgHCAfAAAAAAAAAAACH5BAAAAAAAIf8LTUdLOEJJTTAwMDD/OEJJTQQlAAAAAAAQAAAAAAAAAAAAAAAAAAAAADhCSU0EOgAAAAAA9wAAABAAAAABAAAAAAALcHJpbnRPdXRwdXQAAAAFAAAAAFBzdFNib29sAQAAAABJbnRlZW51bQAAAABJbnRlAAAAAENscm0AAAAPcHJpbnRTaXh0ZWVuQml0Ym9vbAAAAAALcHJpbnRlck5hbWVURVhUAAAAAQAAAAAAD3ByaW50UHJvb2ZTZXR1cE9iamMAAAAVBB8EMARABDAEPAQ1BEIEQARLACAERgQyBDUEQgQ+BD8EQAQ+BDEESwAAAAAACnByb29mU2V0dXAAAAABAAAAAEJsdG5l/251bQAAAAxidWlsdGluUHJvb2YAAAAJcHJvb2ZDTVlLADhCSU0EOwAAAAACLQAAABAAAAABAAAAAAAScHJpbnRPdXRwdXRPcHRpb25zAAAAFwAAAABDcHRuYm9vbAAAAAAAQ2xicmJvb2wAAAAAAFJnc01ib29sAAAAAABDcm5DYm9vbAAAAAAAQ250Q2Jvb2wAAAAAAExibHNib29sAAAAAABOZ3R2Ym9vbAAAAAAARW1sRGJvb2wAAAAAAEludHJib29sAAAAAABCY2tnT2JqYwAAAAEAAAAAAABSR0JDAAAAAwAAAABSZCAgZG91YkBv4AAAAAAAAAAAAEdybv8gZG91YkBv4AAAAAAAAAAAAEJsICBkb3ViQG/gAAAAAAAAAAAAQnJkVFVudEYjUmx0AAAAAAAAAAAAAAAAQmxkIFVudEYjUmx0AAAAAAAAAAAAAAAAUnNsdFVudEYjUHhsQHLAAAAAAAAAAAAKdmVjdG9yRGF0YWJvb2wBAAAAAFBnUHNlbnVtAAAAAFBnUHMAAAAAUGdQQwAAAABMZWZ0VW50RiNSbHQAAAAAAAAAAAAAAABUb3AgVW50RiNSbHQAAAAAAAAAAAAAAABTY2wgVW50RiNQcmNAWQAAAAAAAAAAABBjcm9wV2hlblByaW50aW5nYm9vbAAAAAAOY3L/b3BSZWN0Qm90dG9tbG9uZwAAAAAAAAAMY3JvcFJlY3RMZWZ0bG9uZwAAAAAAAAANY3JvcFJlY3RSaWdodGxvbmcAAAAAAAAAC2Nyb3BSZWN0VG9wbG9uZwAAAAAAOEJJTQPtAAAAAAAQASwAAAABAAIBLAAAAAEAAjhCSU0EJgAAAAAADgAAAAAAAAAAAAA/gAAAOEJJTQQNAAAAAAAEAAAAWjhCSU0EGQAAAAAABAAAAB44QklNA/MAAAAAAAkAAAAAAAAAAAEAOEJJTScQAAAAAAAKAAEAAAAAAAAAAjhCSU0D9QAAAAAASAAvZmYAAQBsZmYABgAAAAAAAQAv/2ZmAAEAoZmaAAYAAAAAAAEAMgAAAAEAWgAAAAYAAAAAAAEANQAAAAEALQAAAAYAAAAAAAE4QklNA/gAAAAAAHAAAP////////////////////////////8D6AAAAAD/////////////////////////////A+gAAAAA/////////////////////////////wPoAAAAAP////////////////////////////8D6AAAOEJJTQQIAAAAAAAQAAAAAQAAAkAAAAJAAAAAADhCSU0EHgAAAAAABAAAAAA4QklNBBoAAAAAA0sAAAAGAAAAAAAAAAAAAAHCAAABwgAAAP8LBBEENQQ3ACAEOAQ8BDUEPQQ4AC0AMQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAABwgAAAcIAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAQAAAAAAAG51bGwAAAACAAAABmJvdW5kc09iamMAAAABAAAAAAAAUmN0MQAAAAQAAAAAVG9wIGxvbmcAAAAAAAAAAExlZnRsb25nAAAAAAAAAABCdG9tbG9uZwAAAcIAAAAAUmdodGxvbmcAAAHCAAAABnNsaWNlc1ZsTHMAAAABT2JqYwAAAAEAAAAAAAVzbGljZQAAABL/AAAAB3NsaWNlSURsb25nAAAAAAAAAAdncm91cElEbG9uZwAAAAAAAAAGb3JpZ2luZW51bQAAAAxFU2xpY2VPcmlnaW4AAAANYXV0b0dlbmVyYXRlZAAAAABUeXBlZW51bQAAAApFU2xpY2VUeXBlAAAAAEltZyAAAAAGYm91bmRzT2JqYwAAAAEAAAAAAABSY3QxAAAABAAAAABUb3AgbG9uZwAAAAAAAAAATGVmdGxvbmcAAAAAAAAAAEJ0b21sb25nAAABwgAAAABSZ2h0bG9uZwAAAcIAAAADdXJs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",
+            text="Здесь будет изображение схемы сканирования",
             background="#f0f0f0",
             justify="center",
             font=('Arial', 10)
@@ -324,46 +320,59 @@ class COXOproScan:
             if not points_file:
                 return
 
+            # Чтение и обработка точек
             points = []
             with open(points_file, 'r', encoding='cp1251') as f:
                 for line in f:
                     line = line.strip()
                     if line:
-                        parts = line.split(',')
+                        parts = [part.strip() for part in line.split(',')]
                         if len(parts) >= 2:
                             try:
-                                x = float(parts[0].strip())
-                                y = float(parts[1].strip())
-                                z = float(parts[2].strip()) if len(parts) >= 3 else 0.0
+                                x = float(parts[0])
+                                y = float(parts[1])
+                                z = float(parts[2]) if len(parts) >= 3 else 0.0
                                 points.append((x, y, z))
                             except ValueError:
                                 continue
 
             if len(points) < 2:
-                raise ValueError("Необходимо минимум 2 точки")
+                raise ValueError("Необходимо минимум 2 точки для создания полилинии")
 
+            # Создание чистого DXF
             doc = ezdxf.new('R2010')
             msp = doc.modelspace()
-            polyline = msp.add_polyline2d(points)
-
+            
+            # Добавляем 3D полилинию
+            polyline = msp.add_polyline3d(points)
+            
+            # Упрощаем файл - оставляем только необходимые данные
+            doc.header['$ACADVER'] = 'AC1021'  # Версия AutoCAD 2010
+            doc.header['$INSBASE'] = (0, 0, 0)
+            doc.header['$EXTMIN'] = (min(p[0] for p in points), min(p[1] for p in points), min(p[2] for p in points))
+            doc.header['$EXTMAX'] = (max(p[0] for p in points), max(p[1] for p in points), max(p[2] for p in points))
+            
+            # Удаляем все ненужные слои
+            for layer in list(doc.layers):
+                if layer.dxf.name != '0':
+                    doc.layers.remove(layer.dxf.name)
+            
             filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
             filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
             doc.saveas(filepath)
 
             messagebox.showinfo(
                 "Готово!",
-                f"DXF создан:\n{filepath}\n"
-                f"Точек: {len(points)}"
+                f"DXF файл успешно создан:\n{filepath}\n"
+                f"Количество точек: {len(points)}"
             )
         except ValueError as ve:
             messagebox.showerror("Ошибка данных", str(ve))
-        except IOError as ioe:
-            messagebox.showerror("Ошибка файла", f"Ошибка при работе с файлами:\n{str(ioe)}")
         except Exception as e:
-            messagebox.showerror("Неизвестная ошибка", f"Произошла непредвиденная ошибка:\n{str(e)}")
+            messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = COXOproScan(root)
-    app.params["probe_depth"].set(20.0)
+    app.params["probe_depth"].set(20.0)  # Установка глубины зондирования по умолчанию
     root.mainloop()
