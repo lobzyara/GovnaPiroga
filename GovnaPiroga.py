@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import os
 from datetime import datetime
+import sys
+import ctypes
 import ezdxf
 
 class COXOproScan:
@@ -12,13 +14,32 @@ class COXOproScan:
         self.setup_ui()
         self.reset_settings()
         
+        # Установка иконки
+        self.set_icon()
+
+    def resource_path(self, relative_path):
+        """ Получает абсолютный путь к ресурсу для PyInstaller """
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
+
+    def set_icon(self):
+        """ Установка иконки для Windows """
+        if sys.platform == 'win32':
+            try:
+                icon_path = self.resource_path('IMG_8084.ico')
+                self.root.iconbitmap(icon_path)
+            except Exception as e:
+                print(f"Ошибка загрузки иконки: {e}")
+
     def setup_ui(self):
         self.root.title("COXOproScan v3.4")
-        self.root.geometry("500x550")  # Уменьшил высоту окна
+        self.root.geometry("500x550")
         self.root.resizable(False, False)
         self.center_window()
         
-        # Настройка стилей
         style = ttk.Style()
         style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=5)
         style.configure("Custom.TButton", 
@@ -31,21 +52,18 @@ class COXOproScan:
                  foreground=[('active', 'black'), ('disabled', 'gray')],
                  background=[('active', '#e0e0e0'), ('disabled', '#cccccc')])
 
-        # Основной контейнер
         main_container = ttk.Frame(self.root, padding=3)
         main_container.pack(fill=tk.BOTH, expand=True)
 
-        # Верхняя часть с параметрами
         top_panel = ttk.Frame(main_container)
-        top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,2))  # Уменьшил отступ снизу
+        top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,2))
 
-        # Панель параметров
         left_panel = ttk.Frame(top_panel)
         left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Основные параметры
         main_frame = ttk.LabelFrame(left_panel, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=5)
-        main_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
+        main_frame.pack(fill=tk.X, pady=2)
         
         self.add_param(main_frame, "scan_length", "Общая длина (мм):", 0)
         self.add_param(main_frame, "retract", "Отвод (мм):", 1)
@@ -73,26 +91,26 @@ class COXOproScan:
 
         # Зоны сканирования
         start_frame = ttk.LabelFrame(left_panel, text="СТАРТОВАЯ ЗОНА", padding=5)
-        start_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
+        start_frame.pack(fill=tk.X, pady=2)
         
         self.add_checkbox(start_frame, "use_start_zone", "Активировать", 0)
         self.add_param(start_frame, "start_zone_length", "Длина (мм):", 1, "use_start_zone")
         self.add_param(start_frame, "start_zone_step", "Шаг (мм):", 2, "use_start_zone")
 
         main_zone_frame = ttk.LabelFrame(left_panel, text="ОСНОВНАЯ ЗОНА", padding=5)
-        main_zone_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
+        main_zone_frame.pack(fill=tk.X, pady=2)
         self.add_param(main_zone_frame, "main_zone_step", "Шаг (мм):", 0)
 
         end_frame = ttk.LabelFrame(left_panel, text="КОНЕЧНАЯ ЗОНА", padding=5)
-        end_frame.pack(fill=tk.X, pady=2)  # Уменьшил отступ
+        end_frame.pack(fill=tk.X, pady=2)
         
         self.add_checkbox(end_frame, "use_end_zone", "Активировать", 0)
         self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
         self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
 
-        # Нижняя панель кнопок (поднята вверх)
+        # Кнопки
         btn_frame = ttk.Frame(main_container)
-        btn_frame.pack(fill=tk.X, pady=(2,0))  # Минимальный отступ сверху и снизу
+        btn_frame.pack(fill=tk.X, pady=(2,0))
         
         ttk.Button(
             btn_frame,
@@ -115,7 +133,6 @@ class COXOproScan:
             command=self.create_artcam_file
         ).pack(side=tk.LEFT, expand=True, padx=2)
 
-    # Остальные методы класса остаются без изменений
     def center_window(self):
         self.root.update_idletasks()
         width = self.root.winfo_width()
@@ -326,20 +343,16 @@ class COXOproScan:
             if len(points) < 2:
                 raise ValueError("Необходимо минимум 2 точки для создания полилинии")
 
-            # Создание DXF вручную в требуемом формате
+            # Создание DXF
             filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
             filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
             
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             
             with open(filepath, 'w', encoding='cp1251') as f:
-                # Записываем заголовок
                 f.write("  0\nSECTION\n  2\nENTITIES\n")
-                
-                # Начало полилинии
                 f.write("  0\nPOLYLINE\n  8\n0\n")
                 
-                # Вершины полилинии
                 for x, y, z in points:
                     f.write(f"  0\nVERTEX\n  8\n0\n")
                     f.write(f" 10\n{x:.5f}\n")
@@ -347,7 +360,6 @@ class COXOproScan:
                     f.write(f" 30\n{z:.5f}\n")
                     f.write(" 70\n    32\n")
                 
-                # Конец полилинии и файла
                 f.write("  0\nSEQEND\n")
                 f.write("  0\nENDSEC\n")
                 f.write("  0\nEOF")
@@ -363,7 +375,11 @@ class COXOproScan:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
 if __name__ == "__main__":
+    # Установка AppUserModelID перед созданием окна
+    if sys.platform == 'win32':
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('COXOproScan.1.0')
+    
     root = tk.Tk()
     app = COXOproScan(root)
-    app.params["probe_depth"].set(20.0)  # Установка глубины зондирования по умолчанию
+    app.params["probe_depth"].set(20.0)  # Значение по умолчанию
     root.mainloop()
