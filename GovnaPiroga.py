@@ -13,107 +13,100 @@ class COXOproScan:
         self.reset_settings()
         
     def setup_ui(self):
-    self.root.title("COXOproScan v3.4")
-    self.root.geometry("500x700")  # Reduced width since we're removing the right panel
-    self.root.resizable(False, False)
-    self.center_window()
-    
-    # Настройка стилей
-    style = ttk.Style()
-    style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=5)
-    style.configure("Custom.TButton", 
-                  foreground="black",
-                  background="#f0f0f0",
-                  font=('Arial', 10, 'bold'),
-                  padding=3,
-                  borderwidth=1)
-    style.map("Custom.TButton",
-             foreground=[('active', 'black'), ('disabled', 'gray')],
-             background=[('active', '#e0e0e0'), ('disabled', '#cccccc')])
+        self.root.title("COXOproScan v3.4")
+        self.root.geometry("500x700")  # Reduced width since we're removing the right panel
+        self.root.resizable(False, False)
+        self.center_window()
+        
+        # Настройка стилей
+        style = ttk.Style()
+        style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=5)
+        style.configure("Custom.TButton", 
+                      foreground="black",
+                      background="#f0f0f0",
+                      font=('Arial', 10, 'bold'),
+                      padding=3,
+                      borderwidth=1)
+        style.map("Custom.TButton",
+                 foreground=[('active', 'black'), ('disabled', 'gray')],
+                 background=[('active', '#e0e0e0'), ('disabled', '#cccccc')])
 
-    # Основной контейнер
-    main_container = ttk.Frame(self.root, padding=3)
-    main_container.pack(fill=tk.BOTH, expand=True)
+        # Основной контейнер
+        main_container = ttk.Frame(self.root, padding=3)
+        main_container.pack(fill=tk.BOTH, expand=True)
 
-    # Верхняя часть (только параметры, без правой панели)
-    top_panel = ttk.Frame(main_container)
-    top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,5))
+        # Верхняя часть (только параметры, без правой панели)
+        top_panel = ttk.Frame(main_container)
+        top_panel.pack(fill=tk.BOTH, expand=True, pady=(0,5))
 
-    # Панель параметров (теперь занимает всё пространство)
-    left_panel = ttk.Frame(top_panel)
-    left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Панель параметров (теперь занимает всё пространство)
+        left_panel = ttk.Frame(top_panel)
+        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-    # Основные параметры
-    main_frame = ttk.LabelFrame(left_panel, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=5)
-    main_frame.pack(fill=tk.X, pady=3)
-    
-    self.add_param(main_frame, "scan_length", "Общая длина (мм):", 0)
-    self.add_param(main_frame, "retract", "Отвод (мм):", 1)
-    self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
-    
-    # Дополнительные параметры
-    self.additional_params_visible = True
-    self.probe_depth_frame = ttk.Frame(left_panel)
-    self.probe_depth_frame.pack(fill=tk.X, pady=0)
-    
-    self.additional_params_header = ttk.Label(
-        self.probe_depth_frame, 
-        text="▼ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▼",
-        padding=3,
-        font=('Arial', 9, 'bold'),
-        relief="groove",
-        cursor="hand2"
-    )
-    self.additional_params_header.pack(fill=tk.X)
-    self.additional_params_header.bind("<Button-1>", self.toggle_additional_params)
-    
-    self.additional_params_container = ttk.Frame(self.probe_depth_frame)
-    self.additional_params_container.pack(fill=tk.X)
-    self.add_param(self.additional_params_container, "probe_depth", "Глубина (мм):", 0)
+        # Основные параметры
+        main_frame = ttk.LabelFrame(left_panel, text="ОСНОВНЫЕ ПАРАМЕТРЫ", padding=5)
+        main_frame.pack(fill=tk.X, pady=3)
+        
+        self.add_param(main_frame, "scan_length", "Общая длина (мм):", 0)
+        self.add_param(main_frame, "retract", "Отвод (мм):", 1)
+        self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
+        
+        # Дополнительные параметры
+        self.additional_params_visible = True
+        self.probe_depth_frame = ttk.Frame(left_panel)
+        self.probe_depth_frame.pack(fill=tk.X, pady=0)
+        
+        self.additional_params_header = ttk.Label(
+            self.probe_depth_frame, 
+            text="▼ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▼",
+            padding=3,
+            font=('Arial', 9, 'bold'),
+            relief="groove",
+            cursor="hand2"
+        )
+        self.additional_params_header.pack(fill=tk.X)
+        self.additional_params_header.bind("<Button-1>", self.toggle_additional_params)
+        
+        self.additional_params_container = ttk.Frame(self.probe_depth_frame)
+        self.additional_params_container.pack(fill=tk.X)
+        self.add_param(self.additional_params_container, "probe_depth", "Глубина (мм):", 0)
 
-    # Зоны сканирования
-    start_frame = ttk.LabelFrame(left_panel, text="СТАРТОВАЯ ЗОНА", padding=5)
-    start_frame.pack(fill=tk.X, pady=3)
-    
-    self.add_checkbox(start_frame, "use_start_zone", "Активировать", 0)
-    self.add_param(start_frame, "start_zone_length", "Длина (мм):", 1, "use_start_zone")
-    self.add_param(start_frame, "start_zone_step", "Шаг (мм):", 2, "use_start_zone")
+        # Зоны сканирования
+        start_frame = ttk.LabelFrame(left_panel, text="СТАРТОВАЯ ЗОНА", padding=5)
+        start_frame.pack(fill=tk.X, pady=3)
+        
+        self.add_checkbox(start_frame, "use_start_zone", "Активировать", 0)
+        self.add_param(start_frame, "start_zone_length", "Длина (мм):", 1, "use_start_zone")
+        self.add_param(start_frame, "start_zone_step", "Шаг (мм):", 2, "use_start_zone")
 
-    main_zone_frame = ttk.LabelFrame(left_panel, text="ОСНОВНАЯ ЗОНА", padding=5)
-    main_zone_frame.pack(fill=tk.X, pady=3)
-    self.add_param(main_zone_frame, "main_zone_step", "Шаг (мм):", 0)
+        main_zone_frame = ttk.LabelFrame(left_panel, text="ОСНОВНАЯ ЗОНА", padding=5)
+        main_zone_frame.pack(fill=tk.X, pady=3)
+        self.add_param(main_zone_frame, "main_zone_step", "Шаг (мм):", 0)
 
-    end_frame = ttk.LabelFrame(left_panel, text="КОНЕЧНАЯ ЗОНА", padding=5)
-    end_frame.pack(fill=tk.X, pady=3)
-    
-    self.add_checkbox(end_frame, "use_end_zone", "Активировать", 0)
-    self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
-    self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
+        end_frame = ttk.LabelFrame(left_panel, text="КОНЕЧНАЯ ЗОНА", padding=5)
+        end_frame.pack(fill=tk.X, pady=3)
+        
+        self.add_checkbox(end_frame, "use_end_zone", "Активировать", 0)
+        self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
+        self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
 
-    # Нижняя панель кнопок
-    btn_frame = ttk.Frame(main_container)
-    btn_frame.pack(fill=tk.X, pady=(5,0))
-    
-    ttk.Button(
-        btn_frame,
-        text="СБРОСИТЬ",
-        style="Custom.TButton",
-        command=self.reset_settings
-    ).pack(side=tk.LEFT, expand=True, padx=2)
+        # Нижняя панель кнопок
+        btn_frame = ttk.Frame(main_container)
+        btn_frame.pack(fill=tk.X, pady=(5,0))
+        
+        ttk.Button(
+            btn_frame,
+            text="СБРОСИТЬ",
+            style="Custom.TButton",
+            command=self.reset_settings
+        ).pack(side=tk.LEFT, expand=True, padx=2)
 
-    ttk.Button(
-        btn_frame,
-        text="G-КОД",
-        style="Custom.TButton",
-        command=self.generate_gcode
-    ).pack(side=tk.LEFT, expand=True, padx=2)
-
-    ttk.Button(
-        btn_frame,
-        text="DXF ДЛЯ ARTCAM",
-        style="Custom.TButton",
-        command=self.create_artcam_file
-    ).pack(side=tk.LEFT, expand=True, padx=2)
+        ttk.Button(
+            btn_frame,
+            text="G-КОД",
+            style="Custom.TButton",
+            command=self.generate_gcode
+        ).pack(side=tk.LEFT, expand=True, padx=2)
 
         ttk.Button(
             btn_frame,
@@ -302,71 +295,72 @@ class COXOproScan:
         except Exception as e:
             messagebox.showerror("Неизвестная ошибка", f"Произошла непредвиденная ошибка:\n{str(e)}")
 
-   def create_artcam_file(self):
-    try:
-        points_file = filedialog.askopenfilename(
-            initialdir=os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan"),
-            title="Выберите файл точек из Mach3",
-            filetypes=(("Текстовые файлы", "*.txt"), ("Все файлы", "*.*"))
-        )
-        
-        if not points_file:
-            return
-
-        # Чтение и обработка точек
-        points = []
-        with open(points_file, 'r', encoding='cp1251') as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    parts = [part.strip() for part in line.split(',')]
-                    if len(parts) >= 2:
-                        try:
-                            x = float(parts[0])
-                            y = float(parts[1])
-                            z = float(parts[2]) if len(parts) >= 3 else 0.0
-                            points.append((x, y, z))
-                        except ValueError:
-                            continue
-
-        if len(points) < 2:
-            raise ValueError("Необходимо минимум 2 точки для создания полилинии")
-
-        # Создание DXF вручную в требуемом формате
-        filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
-        filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
-        
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        with open(filepath, 'w', encoding='cp1251') as f:
-            # Записываем заголовок
-            f.write("  0\nSECTION\n  2\nENTITIES\n")
+    def create_artcam_file(self):
+        try:
+            points_file = filedialog.askopenfilename(
+                initialdir=os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan"),
+                title="Выберите файл точек из Mach3",
+                filetypes=(("Текстовые файлы", "*.txt"), ("Все файлы", "*.*"))
+            )
             
-            # Начало полилинии
-            f.write("  0\nPOLYLINE\n  8\n0\n")
-            
-            # Вершины полилинии
-            for x, y, z in points:
-                f.write(f"  0\nVERTEX\n  8\n0\n")
-                f.write(f" 10\n{x:.5f}\n")
-                f.write(f" 20\n{y:.5f}\n")
-                f.write(f" 30\n{z:.5f}\n")
-                f.write(" 70\n    32\n")
-            
-            # Конец полилинии и файла
-            f.write("  0\nSEQEND\n")
-            f.write("  0\nENDSEC\n")
-            f.write("  0\nEOF")
+            if not points_file:
+                return
 
-        messagebox.showinfo(
-            "Готово!",
-            f"DXF файл успешно создан:\n{filepath}\n"
-            f"Количество точек: {len(points)}"
-        )
-    except ValueError as ve:
-        messagebox.showerror("Ошибка данных", str(ve))
-    except Exception as e:
-        messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
+            # Чтение и обработка точек
+            points = []
+            with open(points_file, 'r', encoding='cp1251') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        parts = [part.strip() for part in line.split(',')]
+                        if len(parts) >= 2:
+                            try:
+                                x = float(parts[0])
+                                y = float(parts[1])
+                                z = float(parts[2]) if len(parts) >= 3 else 0.0
+                                points.append((x, y, z))
+                            except ValueError:
+                                continue
+
+            if len(points) < 2:
+                raise ValueError("Необходимо минимум 2 точки для создания полилинии")
+
+            # Создание DXF вручную в требуемом формате
+            filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
+            filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
+            
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            
+            with open(filepath, 'w', encoding='cp1251') as f:
+                # Записываем заголовок
+                f.write("  0\nSECTION\n  2\nENTITIES\n")
+                
+                # Начало полилинии
+                f.write("  0\nPOLYLINE\n  8\n0\n")
+                
+                # Вершины полилинии
+                for x, y, z in points:
+                    f.write(f"  0\nVERTEX\n  8\n0\n")
+                    f.write(f" 10\n{x:.5f}\n")
+                    f.write(f" 20\n{y:.5f}\n")
+                    f.write(f" 30\n{z:.5f}\n")
+                    f.write(" 70\n    32\n")
+                
+                # Конец полилинии и файла
+                f.write("  0\nSEQEND\n")
+                f.write("  0\nENDSEC\n")
+                f.write("  0\nEOF")
+
+            messagebox.showinfo(
+                "Готово!",
+                f"DXF файл успешно создан:\n{filepath}\n"
+                f"Количество точек: {len(points)}"
+            )
+        except ValueError as ve:
+            messagebox.showerror("Ошибка данных", str(ve))
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = COXOproScan(root)
