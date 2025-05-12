@@ -12,8 +12,13 @@ class COXOproScan:
         self.root = root
         self.params = {}
         self.setup_ui()
-        self.reset_settings()
         
+        # Установка начальных значений
+        self.params["retract"].set(5.0)        # Отвод 5.0 мм
+        self.params["speed"].set(300.0)        # Скорость 300 мм/мин
+        self.params["main_zone_step"].set(1.0) # Шаг основной зоны 1.0 мм
+        self.params["probe_depth"].set(20.0)   # Глубина зондирования 20.0 мм
+
         # Установка иконки
         self.set_icon()
 
@@ -69,14 +74,14 @@ class COXOproScan:
         self.add_param(main_frame, "retract", "Отвод (мм):", 1)
         self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
         
-        # Дополнительные параметры
-        self.additional_params_visible = True
+        # Дополнительные параметры (изначально свернуты)
+        self.additional_params_visible = False
         self.probe_depth_frame = ttk.Frame(left_panel)
         self.probe_depth_frame.pack(fill=tk.X, pady=0)
         
         self.additional_params_header = ttk.Label(
             self.probe_depth_frame, 
-            text="▼ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▼",
+            text="▶ ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ▶",
             padding=3,
             font=('Arial', 9, 'bold'),
             relief="groove",
@@ -86,7 +91,6 @@ class COXOproScan:
         self.additional_params_header.bind("<Button-1>", self.toggle_additional_params)
         
         self.additional_params_container = ttk.Frame(self.probe_depth_frame)
-        self.additional_params_container.pack(fill=tk.X)
         self.add_param(self.additional_params_container, "probe_depth", "Глубина (мм):", 0)
 
         # Зоны сканирования
@@ -176,16 +180,18 @@ class COXOproScan:
         self.root.update_idletasks()
 
     def reset_settings(self):
-        current_probe_depth = self.params["probe_depth"].get()
-        defaults = {
-            "scan_length": 0.0, "retract": 0.0, "speed": 0.0,
-            "use_start_zone": False, "start_zone_length": 0.0, "start_zone_step": 0.0,
-            "main_zone_step": 0.0, "use_end_zone": False, "end_zone_length": 0.0,
-            "end_zone_step": 0.0, "probe_depth": current_probe_depth
-        }
-        for name, var in self.params.items():
-            if name in defaults:
-                var.set(defaults[name])
+        """Сброс настроек к значениям по умолчанию"""
+        self.params["scan_length"].set(0.0)
+        self.params["retract"].set(5.0)        # Отвод 5.0 мм
+        self.params["speed"].set(300.0)        # Скорость 300 мм/мин
+        self.params["probe_depth"].set(20.0)   # Глубина зондирования 20.0 мм
+        self.params["use_start_zone"].set(False)
+        self.params["start_zone_length"].set(0.0)
+        self.params["start_zone_step"].set(0.0)
+        self.params["main_zone_step"].set(1.0) # Шаг основной зоны 1.0 мм
+        self.params["use_end_zone"].set(False)
+        self.params["end_zone_length"].set(0.0)
+        self.params["end_zone_step"].set(0.0)
 
     def generate_gcode(self):
         try:
@@ -381,5 +387,4 @@ if __name__ == "__main__":
     
     root = tk.Tk()
     app = COXOproScan(root)
-    app.params["probe_depth"].set(20.0)  # Значение по умолчанию
     root.mainloop()
