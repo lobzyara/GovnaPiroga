@@ -394,12 +394,13 @@ class COXOproScan:
             # Обработка основного блока
             processed_content = middle.copy()  # Оригинальный блок
             current_block = middle.copy()  # Текущий блок для зеркалирования
+            current_shift = 0.0  # Начальное смещение
             
             for copy_num in range(4):  # 4 зеркальные копии
-                shift = 0.002 * (copy_num + 1)
+                current_shift += 0.02  # Каждая копия смещается на +0.02 мм от предыдущей
                 mirrored_block = current_block[::-1]  # Зеркалим текущий блок
                 
-                # Применяем смещение к X
+                # Применяем текущее смещение к X
                 shifted_block = []
                 for line in mirrored_block:
                     if "X" in line:
@@ -407,7 +408,7 @@ class COXOproScan:
                         for j, part in enumerate(parts):
                             if part.startswith("X"):
                                 x_val = float(part[1:])
-                                new_x = x_val + shift
+                                new_x = x_val + current_shift
                                 parts[j] = f"X{new_x:.4f}"
                         line = " ".join(parts)
                     shifted_block.append(line)
@@ -433,7 +434,7 @@ class COXOproScan:
                 f"Структура:\n"
                 f"1. Первые 6 строк без изменений\n"
                 f"2. Оригинальный блок координат\n"
-                f"3. 4 зеркальных копии, каждая зеркалит предыдущую\n"
+                f"3. 4 зеркальных копии (каждая смещена на +0.02 мм от предыдущей)\n"
                 f"4. Оригинальный конец (G0,M5,M30)"
             )
         except Exception as e:
