@@ -10,6 +10,10 @@ class COXOproScan:
     def __init__(self, root):
         self.root = root
         self.params = {}
+        self.cyclic_params = {
+            "depth_step": tk.DoubleVar(value=0.02),
+            "copies_count": tk.IntVar(value=5)  # Теперь 5 проходов (включая исходный)
+        }
         self.setup_ui()
         
         # Установка начальных значений
@@ -36,7 +40,7 @@ class COXOproScan:
 
     def setup_ui(self):
         self.root.title("COXOproScan v3.4")
-        self.root.geometry("500x450")
+        self.root.geometry("500x500")  # Увеличили высоту для нового меню
         self.root.resizable(False, False)
         self.center_window()
         
@@ -97,7 +101,46 @@ class COXOproScan:
         self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
         self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
 
-        # Кнопки
+        # Циклическая обработка (новый блок)
+        self.cyclic_processing_visible = False
+        self.cyclic_frame = ttk.Frame(main_container)
+        self.cyclic_frame.pack(fill=tk.X, pady=0)
+        
+        self.cyclic_header = ttk.Label(
+            self.cyclic_frame, 
+            text="ЦИКЛИЧЕСКАЯ ОБРАБОТКА",
+            padding=2,
+            font=('Arial', 8, 'bold'),
+            relief="flat"
+        )
+        self.cyclic_header.pack(fill=tk.X)
+        
+        # Контейнер для параметров циклической обработки
+        self.cyclic_params_container = ttk.Frame(self.cyclic_frame)
+        
+        # Параметры
+        self.add_cyclic_param(self.cyclic_params_container, "depth_step", "Шаг углубления (мм):", 0)
+        self.add_cyclic_param(self.cyclic_params_container, "copies_count", "Количество проходов:", 1)  # Переименовано
+        
+        # Кнопки управления
+        btn_frame_cyclic = ttk.Frame(self.cyclic_params_container)
+        btn_frame_cyclic.pack(fill=tk.X, pady=(5,0))
+        
+        ttk.Button(
+            btn_frame_cyclic,
+            text="ОТКРЫТЬ УП",
+            style="Custom.TButton",
+            command=self.open_tap_file
+        ).pack(side=tk.LEFT, expand=True, padx=1)
+
+        ttk.Button(
+            btn_frame_cyclic,
+            text="СОХРАНИТЬ УП",
+            style="Custom.TButton",
+            command=self.process_tap_file
+        ).pack(side=tk.LEFT, expand=True, padx=1)
+
+        # Основные кнопки
         btn_frame = ttk.Frame(main_container)
         btn_frame.pack(fill=tk.X, pady=(3,0))
         
@@ -122,12 +165,18 @@ class COXOproScan:
             command=self.create_artcam_file
         ).pack(side=tk.LEFT, expand=True, padx=1)
 
-        ttk.Button(
-            btn_frame,
-            text="ЗЕРКАЛО TAP",
-            style="Custom.TButton",
-            command=self.process_tap_file
-        ).pack(side=tk.LEFT, expand=True, padx=1)
+        # Показываем параметры циклической обработки по умолчанию
+        self.cyclic_params_container.pack(fill=tk.X)
+
+    def add_cyclic_param(self, frame, param_name, label_text, row):
+        container = ttk.Frame(frame)
+        container.pack(fill=tk.X, pady=0)
+        ttk.Label(container, text=label_text, width=20, anchor="w").pack(side=tk.LEFT)
+        if param_name == "copies_count":
+            entry = ttk.Entry(container, textvariable=self.cyclic_params[param_name], width=5)
+        else:
+            entry = ttk.Entry(container, textvariable=self.cyclic_params[param_name], width=10)
+        entry.pack(side=tk.LEFT, padx=1)
 
     def center_window(self):
         self.root.update_idletasks()
@@ -360,20 +409,32 @@ class COXOproScan:
         except Exception as e:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
+    def open_tap_file(self):
+        self.tap_file_path = filedialog.askopenfilename(
+            title="Выберите файл .tap",
+            filetypes=(("TAP files", "*.tap"), ("Все файлы", "*.*")),
+            initialdir=os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan")
+        )
+        if self.tap_file_path:
+            messagebox.showinfo("Файл выбран", f"Выбран файл:\n{self.tap_file_path}")
+
     def process_tap_file(self):
-        """Обрабатывает .tap файл: первые 6 строк без изменений, зеркалит предыдущий проход с фиксированным смещением 0.02 мм"""
+        """Обрабатывает .tap файл с циклической обработкой"""
         try:
-            # Выбор файла
-            filepath = filedialog.askopenfilename(
-                title="Выберите файл .tap",
-                filetypes=(("TAP files", "*.tap"), ("Все файлы", "*.*")),
-                initialdir=os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan")
-            )
-            if not filepath:
-                return
+            if not hasattr(self, 'tap_file_path') or not self.tap_file_path:
+                raise ValueError("Сначала выберите файл .tap (кнопка ОТКРЫТЬ УП)")
+
+            # Получаем параметры
+            depth_step = self.cyclic_params["depth_step"].get()
+            copies_count = self.cyclic_params["copies_count"].get()
+
+            if depth_step <= 0:
+                raise ValueError("Шаг углубления должен быть > 0")
+            if copies_count <= 0:
+                raise ValueError("Количество проходов должно быть > 0")
 
             # Чтение файла
-            with open(filepath, 'r', encoding='cp1251') as f:
+            with open(self.tap_file_path, 'r', encoding='cp1251') as f:
                 lines = [line.strip() for line in f if line.strip()]
 
             # Находим индекс начала footer (G0 X0.0000 Y0.0000)
@@ -395,15 +456,15 @@ class COXOproScan:
             processed_content = []
             current_block = original_block.copy()
             
-            # Добавляем оригинальный блок
+            # Добавляем оригинальный блок (первый проход)
             processed_content.extend(current_block)
             
-            # Генерируем 4 зеркальные копии
-            for i in range(4):
+            # Генерируем зеркальные копии (остальные проходы)
+            for i in range(copies_count - 1):  # -1 потому что первый проход уже добавлен
                 # Зеркалим предыдущий блок
                 mirrored_block = current_block[::-1]
                 
-                # Применяем смещение +0.02 мм к X
+                # Применяем смещение к X
                 shifted_block = []
                 for line in mirrored_block:
                     if "X" in line:
@@ -411,7 +472,7 @@ class COXOproScan:
                         for j, part in enumerate(parts):
                             if part.startswith("X"):
                                 x_val = float(part[1:])
-                                new_x = x_val + 0.02  # Фиксированное смещение 0.02 мм
+                                new_x = x_val + depth_step
                                 parts[j] = f"X{new_x:.4f}"
                         line = " ".join(parts)
                     shifted_block.append(line)
@@ -424,8 +485,8 @@ class COXOproScan:
             
             # Сохранение с новым именем
             new_filepath = os.path.join(
-                os.path.dirname(filepath),
-                f"mirrored_{os.path.basename(filepath)}"
+                os.path.dirname(self.tap_file_path),
+                f"mirrored_{os.path.basename(self.tap_file_path)}"
             )
             
             with open(new_filepath, 'w', encoding='cp1251') as f:
@@ -434,8 +495,12 @@ class COXOproScan:
             messagebox.showinfo(
                 "Готово!",
                 f"Файл успешно обработан:\n{new_filepath}\n"
-                f"Каждое новое зеркальное отражение смещено ровно на 0.02 мм относительно предыдущего!"
+                f"Параметры обработки:\n"
+                f"- Шаг углубления: {depth_step} мм\n"
+                f"- Количество проходов: {copies_count}"
             )
+        except ValueError as ve:
+            messagebox.showerror("Ошибка ввода", str(ve))
         except Exception as e:
             messagebox.showerror("Ошибка", f"Ошибка обработки файла:\n{str(e)}")
 
