@@ -129,7 +129,7 @@ class COXOproScan:
 
         ttk.Button(
             btn_frame,
-            text="ОБРАБОТАТЬ TAP",
+            text="ЦИКЛ TAP",
             style="Custom.TButton",
             command=self.process_tap_file
         ).pack(side=tk.LEFT, expand=True, padx=1)
@@ -378,7 +378,7 @@ class COXOproScan:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
     def process_tap_file(self):
-        """Обрабатывает .tap файл: сохраняет первые 6 строк, зеркально копирует середину 5 раз с +0.002 к X, сохраняет конец"""
+        """Обрабатывает .tap файл: сохраняет первые 6 строк, делает 5 проходов (оригинал + 4 зеркала с шагом +0.002), сохраняет конец"""
         try:
             # Выбор файла
             filepath = filedialog.askopenfilename(
@@ -395,23 +395,34 @@ class COXOproScan:
 
             # Разделение файла
             header = lines[:6]  # Первые 6 строк без изменений
-            middle = lines[6:-1]  # Середина для обработки
-            footer = [lines[-1]]  # Последняя строка (G0...) без изменений
+            middle = []
+            footer = []
+            
+            # Находим конец рабочего блока (последний G1 перед G0/M5)
+            last_g1_index = -1
+            for i, line in enumerate(lines):
+                if line.startswith('G1'):
+                    last_g1_index = i
+                elif line.startswith(('G0', 'M5')) and last_g1_index != -1:
+                    break
+            
+            if last_g1_index != -1:
+                middle = lines[6:last_g1_index+1]
+                footer = lines[last_g1_index+1:]
+            else:
+                middle = lines[6:]
 
             # Обработка середины
-            processed_middle = []
-            current_block = middle.copy()
+            processed_content = middle.copy()  # Начинаем с оригинала
             
-            for i in range(5):
-                # Зеркалим блок
-                mirrored_block = current_block[::-1]
+            for copy_num in range(1, 5):  # Ровно 4 зеркальных копии
+                shift = 0.002 * copy_num
+                mirrored_block = processed_content[-len(middle):][::-1]  # Берем последний блок и зеркалим
                 
-                # Добавляем смещение к X
+                # Применяем смещение к X
                 shifted_block = []
-                shift = 0.002 * (i + 1)
                 for line in mirrored_block:
                     if "X" in line:
-                        # Находим и изменяем координату X
                         parts = line.split()
                         for j, part in enumerate(parts):
                             if part.startswith("X"):
@@ -421,18 +432,18 @@ class COXOproScan:
                         line = " ".join(parts)
                     shifted_block.append(line)
                 
-                processed_middle.extend(shifted_block)
-                current_block = shifted_block
+                processed_content.extend(shifted_block)
 
             # Собираем новый файл
-            new_content = header + middle + processed_middle + footer
+            new_content = header + processed_content + footer
             
             # Сохранение
             new_filepath = filepath.replace(".tap", "_processed.tap")
             with open(new_filepath, 'w', encoding='cp1251') as f:
                 f.write("\n".join(new_content) + "\n")
 
-            messagebox.showinfo("Готово!", f"Файл успешно обработан:\n{new_filepath}")
+            messagebox.showinfo("Готово!", f"Файл успешно обработан:\n{new_filepath}\n"
+                                          f"Всего проходов: 5 (оригинал + 4 зеркала)")
         except Exception as e:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
