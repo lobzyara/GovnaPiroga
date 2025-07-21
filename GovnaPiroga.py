@@ -5,7 +5,6 @@ import os
 from datetime import datetime
 import sys
 import ctypes
-import ezdxf
 
 class COXOproScan:
     def __init__(self, root):
@@ -41,21 +40,18 @@ class COXOproScan:
 
     def setup_ui(self):
         self.root.title("COXOproScan v3.4")
-        self.root.geometry("500x450")  # Уменьшенная высота
+        self.root.geometry("500x450")
         self.root.resizable(False, False)
         self.center_window()
         
-        # Настройка компактных стилей
+        # Стили
         style = ttk.Style()
         style.configure(".", padding=1)
         style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=3)
         style.configure("TEntry", padding=1, font=('Arial', 8))
         style.configure("TCheckbutton", font=('Arial', 8))
         style.configure("TLabel", font=('Arial', 8))
-        style.configure("Custom.TButton", 
-                      font=('Arial', 9, 'bold'),
-                      padding=2,
-                      borderwidth=1)
+        style.configure("Custom.TButton", font=('Arial', 9, 'bold'), padding=2, borderwidth=1)
 
         main_container = ttk.Frame(self.root, padding=1)
         main_container.pack(fill=tk.BOTH, expand=True)
@@ -68,7 +64,7 @@ class COXOproScan:
         self.add_param(main_frame, "retract", "Отвод (мм):", 1)
         self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
         
-        # Дополнительные параметры (свернуты)
+        # Доп. параметры
         self.additional_params_visible = False
         self.probe_depth_frame = ttk.Frame(main_container)
         self.probe_depth_frame.pack(fill=tk.X, pady=0)
@@ -131,6 +127,13 @@ class COXOproScan:
             command=self.create_artcam_file
         ).pack(side=tk.LEFT, expand=True, padx=1)
 
+        ttk.Button(
+            btn_frame,
+            text="ОБРАБОТАТЬ TAP",
+            style="Custom.TButton",
+            command=self.process_tap_file
+        ).pack(side=tk.LEFT, expand=True, padx=1)
+
     def center_window(self):
         self.root.update_idletasks()
         width = self.root.winfo_width()
@@ -176,13 +179,13 @@ class COXOproScan:
     def reset_settings(self):
         """Сброс настроек к значениям по умолчанию"""
         self.params["scan_length"].set(0.0)
-        self.params["retract"].set(5.0)        # Отвод 5.0 мм
-        self.params["speed"].set(300.0)        # Скорость 300 мм/мин
-        self.params["probe_depth"].set(20.0)   # Глубина зондирования 20.0 мм
+        self.params["retract"].set(5.0)
+        self.params["speed"].set(300.0)
+        self.params["probe_depth"].set(20.0)
         self.params["use_start_zone"].set(False)
         self.params["start_zone_length"].set(0.0)
         self.params["start_zone_step"].set(0.0)
-        self.params["main_zone_step"].set(1.0) # Шаг основной зоны 1.0 мм
+        self.params["main_zone_step"].set(1.0)
         self.params["use_end_zone"].set(False)
         self.params["end_zone_length"].set(0.0)
         self.params["end_zone_step"].set(0.0)
@@ -371,6 +374,65 @@ class COXOproScan:
             )
         except ValueError as ve:
             messagebox.showerror("Ошибка данных", str(ve))
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
+
+    def process_tap_file(self):
+        """Обрабатывает .tap файл: сохраняет первые 6 строк, зеркально копирует середину 5 раз с +0.002 к X, сохраняет конец"""
+        try:
+            # Выбор файла
+            filepath = filedialog.askopenfilename(
+                title="Выберите .tap файл",
+                filetypes=(("TAP files", "*.tap"), ("Все файлы", "*.*")),
+                initialdir=os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan")
+            )
+            if not filepath:
+                return
+
+            # Чтение файла
+            with open(filepath, 'r', encoding='cp1251') as f:
+                lines = [line.strip() for line in f if line.strip()]
+
+            # Разделение файла
+            header = lines[:6]  # Первые 6 строк без изменений
+            middle = lines[6:-1]  # Середина для обработки
+            footer = [lines[-1]]  # Последняя строка (G0...) без изменений
+
+            # Обработка середины
+            processed_middle = []
+            current_block = middle.copy()
+            
+            for i in range(5):
+                # Зеркалим блок
+                mirrored_block = current_block[::-1]
+                
+                # Добавляем смещение к X
+                shifted_block = []
+                shift = 0.002 * (i + 1)
+                for line in mirrored_block:
+                    if "X" in line:
+                        # Находим и изменяем координату X
+                        parts = line.split()
+                        for j, part in enumerate(parts):
+                            if part.startswith("X"):
+                                x_val = float(part[1:])
+                                new_x = x_val + shift
+                                parts[j] = f"X{new_x:.4f}"
+                        line = " ".join(parts)
+                    shifted_block.append(line)
+                
+                processed_middle.extend(shifted_block)
+                current_block = shifted_block
+
+            # Собираем новый файл
+            new_content = header + middle + processed_middle + footer
+            
+            # Сохранение
+            new_filepath = filepath.replace(".tap", "_processed.tap")
+            with open(new_filepath, 'w', encoding='cp1251') as f:
+                f.write("\n".join(new_content) + "\n")
+
+            messagebox.showinfo("Готово!", f"Файл успешно обработан:\n{new_filepath}")
         except Exception as e:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
