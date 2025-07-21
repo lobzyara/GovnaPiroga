@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022  # Изменено с windows-2019 на windows-2022
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
