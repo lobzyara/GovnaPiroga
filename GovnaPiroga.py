@@ -361,7 +361,7 @@ class COXOproScan:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
     def process_tap_file(self):
-        """Обрабатывает .tap файл: первые 6 строк без изменений, зеркалит предыдущий проход, сохраняет конец (G0,M5,M30)"""
+        """Обрабатывает .tap файл: первые 6 строк без изменений, зеркалит предыдущий проход с фиксированным смещением 0.02 мм"""
         try:
             # Выбор файла
             filepath = filedialog.askopenfilename(
@@ -388,19 +388,22 @@ class COXOproScan:
 
             # Разделение файла
             header = lines[:6]  # Первые 6 строк без изменений
-            middle = lines[6:footer_start]  # Основной блок для обработки
+            original_block = lines[6:footer_start]  # Основной блок для обработки
             footer = lines[footer_start:]  # Конец (G0,M5,M30) без изменений
 
             # Обработка основного блока
-            processed_content = middle.copy()  # Оригинальный блок
-            current_block = middle.copy()  # Текущий блок для зеркалирования
-            current_shift = 0.0  # Начальное смещение
+            processed_content = []
+            current_block = original_block.copy()
             
-            for copy_num in range(4):  # 4 зеркальные копии
-                current_shift += 0.02  # Каждая копия смещается на +0.02 мм от предыдущей
-                mirrored_block = current_block[::-1]  # Зеркалим текущий блок
+            # Добавляем оригинальный блок
+            processed_content.extend(current_block)
+            
+            # Генерируем 4 зеркальные копии
+            for i in range(4):
+                # Зеркалим предыдущий блок
+                mirrored_block = current_block[::-1]
                 
-                # Применяем текущее смещение к X
+                # Применяем смещение +0.02 мм к X
                 shifted_block = []
                 for line in mirrored_block:
                     if "X" in line:
@@ -408,13 +411,13 @@ class COXOproScan:
                         for j, part in enumerate(parts):
                             if part.startswith("X"):
                                 x_val = float(part[1:])
-                                new_x = x_val + current_shift
+                                new_x = x_val + 0.02  # Фиксированное смещение 0.02 мм
                                 parts[j] = f"X{new_x:.4f}"
                         line = " ".join(parts)
                     shifted_block.append(line)
                 
                 processed_content.extend(shifted_block)
-                current_block = shifted_block  # Следующее зеркалирование будет от этого блока
+                current_block = shifted_block  # Для следующей итерации
 
             # Собираем новый файл
             new_content = header + processed_content + footer
@@ -431,11 +434,7 @@ class COXOproScan:
             messagebox.showinfo(
                 "Готово!",
                 f"Файл успешно обработан:\n{new_filepath}\n"
-                f"Структура:\n"
-                f"1. Первые 6 строк без изменений\n"
-                f"2. Оригинальный блок координат\n"
-                f"3. 4 зеркальных копии (каждая смещена на +0.02 мм от предыдущей)\n"
-                f"4. Оригинальный конец (G0,M5,M30)"
+                f"Каждое новое зеркальное отражение смещено ровно на 0.02 мм относительно предыдущего!"
             )
         except Exception as e:
             messagebox.showerror("Ошибка", f"Ошибка обработки файла:\n{str(e)}")
