@@ -13,16 +13,13 @@ class COXOproScan:
         self.setup_ui()
         
         # Установка начальных значений
-        self.params["retract"].set(5.0)        # Отвод 5.0 мм
-        self.params["speed"].set(300.0)        # Скорость 300 мм/мин
-        self.params["main_zone_step"].set(1.0) # Шаг основной зоны 1.0 мм
-        self.params["probe_depth"].set(20.0)   # Глубина зондирования 20.0 мм
-
-        # Установка иконки
+        self.params["retract"].set(5.0)
+        self.params["speed"].set(300.0)
+        self.params["main_zone_step"].set(1.0)
+        self.params["probe_depth"].set(20.0)
         self.set_icon()
 
     def resource_path(self, relative_path):
-        """ Получает абсолютный путь к ресурсу для PyInstaller """
         try:
             base_path = sys._MEIPASS
         except Exception:
@@ -30,7 +27,6 @@ class COXOproScan:
         return os.path.join(base_path, relative_path)
 
     def set_icon(self):
-        """ Установка иконки для Windows """
         if sys.platform == 'win32':
             try:
                 icon_path = self.resource_path('IMG_8084.ico')
@@ -44,7 +40,6 @@ class COXOproScan:
         self.root.resizable(False, False)
         self.center_window()
         
-        # Стили
         style = ttk.Style()
         style.configure(".", padding=1)
         style.configure("TLabelFrame", font=('Arial', 9, 'bold'), padding=3)
@@ -129,7 +124,7 @@ class COXOproScan:
 
         ttk.Button(
             btn_frame,
-            text="ЦИКЛ TAP",
+            text="ЗЕРКАЛО TAP",
             style="Custom.TButton",
             command=self.process_tap_file
         ).pack(side=tk.LEFT, expand=True, padx=1)
@@ -177,7 +172,6 @@ class COXOproScan:
         self.root.update_idletasks()
 
     def reset_settings(self):
-        """Сброс настроек к значениям по умолчанию"""
         self.params["scan_length"].set(0.0)
         self.params["retract"].set(5.0)
         self.params["speed"].set(300.0)
@@ -200,23 +194,14 @@ class COXOproScan:
                 params["end_zone_length"] = 0.0
             
             errors = []
-            if params["scan_length"] <= 0: 
-                errors.append("Общая длина сканирования должна быть > 0")
-            if params["probe_depth"] <= 0: 
-                errors.append("Глубина зондирования должна быть > 0")
-            if params["use_start_zone"] and params["start_zone_step"] <= 0: 
-                errors.append("Шаг стартовой зоны должен быть > 0")
-            if params["main_zone_step"] <= 0: 
-                errors.append("Шаг основной зоны должен быть > 0")
-            if params["use_end_zone"] and params["end_zone_step"] <= 0: 
-                errors.append("Шаг конечной зоны должен быть > 0")
-            
-            if params["start_zone_length"] >= params["scan_length"]:
-                errors.append("Длина стартовой зоны должна быть меньше общей длины")
-            if params["end_zone_length"] >= params["scan_length"]:
-                errors.append("Длина конечной зоны должна быть меньше общей длины")
-            if (params["start_zone_length"] + params["end_zone_length"]) >= params["scan_length"]:
-                errors.append("Сумма длин стартовой и конечной зон должна быть меньше общей длины")
+            if params["scan_length"] <= 0: errors.append("Длина сканирования должна быть > 0")
+            if params["probe_depth"] <= 0: errors.append("Глубина зондирования должна быть > 0")
+            if params["use_start_zone"] and params["start_zone_step"] <= 0: errors.append("Шаг стартовой зоны должен быть > 0")
+            if params["main_zone_step"] <= 0: errors.append("Шаг основной зоны должен быть > 0")
+            if params["use_end_zone"] and params["end_zone_step"] <= 0: errors.append("Шаг конечной зоны должен быть > 0")
+            if params["start_zone_length"] >= params["scan_length"]: errors.append("Длина стартовой зоны должна быть меньше общей длины")
+            if params["end_zone_length"] >= params["scan_length"]: errors.append("Длина конечной зоны должна быть меньше общей длины")
+            if (params["start_zone_length"] + params["end_zone_length"]) >= params["scan_length"]: errors.append("Сумма длин стартовой и конечной зон должна быть меньше общей длины")
             
             if errors: 
                 raise ValueError("\n".join(errors))
@@ -327,7 +312,6 @@ class COXOproScan:
             if not points_file:
                 return
 
-            # Чтение и обработка точек
             points = []
             with open(points_file, 'r', encoding='cp1251') as f:
                 for line in f:
@@ -346,7 +330,6 @@ class COXOproScan:
             if len(points) < 2:
                 raise ValueError("Необходимо минимум 2 точки для создания полилинии")
 
-            # Создание DXF
             filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
             filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
             
@@ -378,11 +361,11 @@ class COXOproScan:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
     def process_tap_file(self):
-        """Обрабатывает .tap файл: сохраняет первые 6 строк, делает 5 проходов (оригинал + 4 зеркала с шагом +0.002), сохраняет конец"""
+        """Обрабатывает .tap файл: первые 6 строк без изменений, 5 проходов координат, сохраняет конец (G0,M5,M30)"""
         try:
             # Выбор файла
             filepath = filedialog.askopenfilename(
-                title="Выберите .tap файл",
+                title="Выберите файл .tap",
                 filetypes=(("TAP files", "*.tap"), ("Все файлы", "*.*")),
                 initialdir=os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan")
             )
@@ -393,31 +376,27 @@ class COXOproScan:
             with open(filepath, 'r', encoding='cp1251') as f:
                 lines = [line.strip() for line in f if line.strip()]
 
-            # Разделение файла
-            header = lines[:6]  # Первые 6 строк без изменений
-            middle = []
-            footer = []
-            
-            # Находим конец рабочего блока (последний G1 перед G0/M5)
-            last_g1_index = -1
-            for i, line in enumerate(lines):
-                if line.startswith('G1'):
-                    last_g1_index = i
-                elif line.startswith(('G0', 'M5')) and last_g1_index != -1:
+            # Находим индекс начала footer (G0 X0.0000 Y0.0000)
+            footer_start = -1
+            for i in range(len(lines)):
+                if lines[i].startswith("G0 X0.0000 Y0.0000"):
+                    footer_start = i
                     break
             
-            if last_g1_index != -1:
-                middle = lines[6:last_g1_index+1]
-                footer = lines[last_g1_index+1:]
-            else:
-                middle = lines[6:]
+            if footer_start == -1:
+                raise ValueError("Не найден конец файла (G0 X0.0000 Y0.0000)")
 
-            # Обработка середины
-            processed_content = middle.copy()  # Начинаем с оригинала
+            # Разделение файла
+            header = lines[:6]  # Первые 6 строк без изменений
+            middle = lines[6:footer_start]  # Основной блок для обработки
+            footer = lines[footer_start:]  # Конец (G0,M5,M30) без изменений
+
+            # Обработка основного блока
+            processed_content = middle.copy()  # Оригинальный блок
             
-            for copy_num in range(1, 5):  # Ровно 4 зеркальных копии
-                shift = 0.002 * copy_num
-                mirrored_block = processed_content[-len(middle):][::-1]  # Берем последний блок и зеркалим
+            for copy_num in range(4):  # 4 зеркальные копии
+                shift = 0.002 * (copy_num + 1)
+                mirrored_block = middle[::-1]  # Зеркалим оригинальный блок
                 
                 # Применяем смещение к X
                 shifted_block = []
@@ -437,18 +416,28 @@ class COXOproScan:
             # Собираем новый файл
             new_content = header + processed_content + footer
             
-            # Сохранение
-            new_filepath = filepath.replace(".tap", "_processed.tap")
+            # Сохранение с новым именем
+            new_filepath = os.path.join(
+                os.path.dirname(filepath),
+                f"mirrored_{os.path.basename(filepath)}"
+            )
+            
             with open(new_filepath, 'w', encoding='cp1251') as f:
                 f.write("\n".join(new_content) + "\n")
 
-            messagebox.showinfo("Готово!", f"Файл успешно обработан:\n{new_filepath}\n"
-                                          f"Всего проходов: 5 (оригинал + 4 зеркала)")
+            messagebox.showinfo(
+                "Готово!",
+                f"Файл успешно обработан:\n{new_filepath}\n"
+                f"Структура:\n"
+                f"1. Первые 6 строк без изменений\n"
+                f"2. Оригинальный блок координат\n"
+                f"3. 4 зеркальных копии с шагом +0.002\n"
+                f"4. Оригинальный конец (G0,M5,M30)"
+            )
         except Exception as e:
-            messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
+            messagebox.showerror("Ошибка", f"Ошибка обработки файла:\n{str(e)}")
 
 if __name__ == "__main__":
-    # Установка AppUserModelID перед созданием окна
     if sys.platform == 'win32':
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('COXOproScan.1.0')
     
