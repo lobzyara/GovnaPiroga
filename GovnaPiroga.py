@@ -361,7 +361,7 @@ class COXOproScan:
             messagebox.showerror("Ошибка", f"Произошла ошибка:\n{str(e)}")
 
     def process_tap_file(self):
-        """Обрабатывает .tap файл: первые 6 строк без изменений, 5 проходов координат, сохраняет конец (G0,M5,M30)"""
+        """Обрабатывает .tap файл: первые 6 строк без изменений, зеркалит предыдущий проход, сохраняет конец (G0,M5,M30)"""
         try:
             # Выбор файла
             filepath = filedialog.askopenfilename(
@@ -393,10 +393,11 @@ class COXOproScan:
 
             # Обработка основного блока
             processed_content = middle.copy()  # Оригинальный блок
+            current_block = middle.copy()  # Текущий блок для зеркалирования
             
             for copy_num in range(4):  # 4 зеркальные копии
                 shift = 0.002 * (copy_num + 1)
-                mirrored_block = middle[::-1]  # Зеркалим оригинальный блок
+                mirrored_block = current_block[::-1]  # Зеркалим текущий блок
                 
                 # Применяем смещение к X
                 shifted_block = []
@@ -412,6 +413,7 @@ class COXOproScan:
                     shifted_block.append(line)
                 
                 processed_content.extend(shifted_block)
+                current_block = shifted_block  # Следующее зеркалирование будет от этого блока
 
             # Собираем новый файл
             new_content = header + processed_content + footer
@@ -431,7 +433,7 @@ class COXOproScan:
                 f"Структура:\n"
                 f"1. Первые 6 строк без изменений\n"
                 f"2. Оригинальный блок координат\n"
-                f"3. 4 зеркальных копии с шагом +0.002\n"
+                f"3. 4 зеркальных копии, каждая зеркалит предыдущую\n"
                 f"4. Оригинальный конец (G0,M5,M30)"
             )
         except Exception as e:
