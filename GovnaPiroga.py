@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import sys
 import ctypes
+from typing import List, Optional
 
 class COXOproScan:
     def __init__(self, root):
@@ -12,8 +13,10 @@ class COXOproScan:
         self.params = {}
         self.cyclic_params = {
             "depth_step": tk.DoubleVar(value=0.02),
-            "copies_count": tk.IntVar(value=5)  # Теперь 5 проходов (включая исходный)
+            "copies_count": tk.IntVar(value=5)
         }
+        self.peak_depth_warning_shown = False
+        self.cyclic_warning_shown = False
         self.setup_ui()
         
         # Установка начальных значений
@@ -40,7 +43,7 @@ class COXOproScan:
 
     def setup_ui(self):
         self.root.title("COXOproScan v3.4")
-        self.root.geometry("500x500")  # Увеличили высоту для нового меню
+        self.root.geometry("500x500")
         self.root.resizable(False, False)
         self.center_window()
         
@@ -63,24 +66,24 @@ class COXOproScan:
         self.add_param(main_frame, "retract", "Отвод (мм):", 1)
         self.add_param(main_frame, "speed", "Скорость (мм/мин):", 2)
         
-        # Доп. параметры
-        self.additional_params_visible = False
-        self.probe_depth_frame = ttk.Frame(main_container)
-        self.probe_depth_frame.pack(fill=tk.X, pady=0)
+        # Пиковая глубина
+        self.peak_depth_visible = False
+        self.peak_depth_frame = ttk.Frame(main_container)
+        self.peak_depth_frame.pack(fill=tk.X, pady=0)
         
-        self.additional_params_header = ttk.Label(
-            self.probe_depth_frame, 
-            text="▶ ДОП. ПАРАМЕТРЫ ▶",
+        self.peak_depth_header = ttk.Label(
+            self.peak_depth_frame, 
+            text="▶ ПИКОВАЯ ГЛУБИНА ▶",
             padding=2,
             font=('Arial', 8, 'bold'),
             relief="flat",
             cursor="hand2"
         )
-        self.additional_params_header.pack(fill=tk.X)
-        self.additional_params_header.bind("<Button-1>", self.toggle_additional_params)
+        self.peak_depth_header.pack(fill=tk.X)
+        self.peak_depth_header.bind("<Button-1>", self.toggle_peak_depth)
         
-        self.additional_params_container = ttk.Frame(self.probe_depth_frame)
-        self.add_param(self.additional_params_container, "probe_depth", "Глубина (мм):", 0)
+        self.peak_depth_container = ttk.Frame(self.peak_depth_frame)
+        self.add_param(self.peak_depth_container, "probe_depth", "Глубина (мм):", 0)
 
         # Зоны сканирования
         start_frame = ttk.LabelFrame(main_container, text="СТАРТОВАЯ ЗОНА", padding=3)
@@ -101,8 +104,7 @@ class COXOproScan:
         self.add_param(end_frame, "end_zone_length", "Длина (мм):", 1, "use_end_zone")
         self.add_param(end_frame, "end_zone_step", "Шаг (мм):", 2, "use_end_zone")
 
-        # Циклическая обработка (новый блок)
-        self.cyclic_processing_visible = False
+        # Циклическая обработка
         self.cyclic_frame = ttk.Frame(main_container)
         self.cyclic_frame.pack(fill=tk.X, pady=0)
         
@@ -120,7 +122,7 @@ class COXOproScan:
         
         # Параметры
         self.add_cyclic_param(self.cyclic_params_container, "depth_step", "Шаг углубления (мм):", 0)
-        self.add_cyclic_param(self.cyclic_params_container, "copies_count", "Количество проходов:", 1)  # Переименовано
+        self.add_cyclic_param(self.cyclic_params_container, "copies_count", "Количество проходов:", 1)
         
         # Кнопки управления
         btn_frame_cyclic = ttk.Frame(self.cyclic_params_container)
@@ -170,6 +172,18 @@ class COXOproScan:
         else:
             entry = ttk.Entry(container, textvariable=self.cyclic_params[param_name], width=10)
         entry.pack(side=tk.LEFT, padx=1)
+        
+        # Добавляем обработчик для показа предупреждения
+        self.cyclic_params[param_name].trace("w", self.show_cyclic_warning)
+
+    def show_cyclic_warning(self, *args):
+        """Показывает предупреждение при изменении параметров циклической обработки"""
+        if not self.cyclic_warning_shown:
+            messagebox.showwarning(
+                "Внимание!",
+                "Убедитесь в том, что последняя точка вектора находится выше всей обрабатываемой поверхности!"
+            )
+            self.cyclic_warning_shown = True
 
     def center_window(self):
         self.root.update_idletasks()
@@ -203,14 +217,24 @@ class COXOproScan:
         self.params[dependency].trace("w", lambda *_, w=widget, d=dependency: 
             w.state(["!disabled" if self.params[d].get() else "disabled"]))
 
-    def toggle_additional_params(self, event=None):
-        self.additional_params_visible = not self.additional_params_visible
-        if self.additional_params_visible:
-            self.additional_params_container.pack(fill=tk.X)
-            self.additional_params_header.config(text="▼ ДОП. ПАРАМЕТРЫ ▼")
+    def toggle_peak_depth(self, event=None):
+        """Переключает видимость параметра пиковой глубины"""
+        self.peak_depth_visible = not self.peak_depth_visible
+        if self.peak_depth_visible:
+            self.peak_depth_container.pack(fill=tk.X)
+            self.peak_depth_header.config(text="▼ ПИКОВАЯ ГЛУБИНА ▼")
+            
+            # Показываем предупреждение при первом открытии
+            if not self.peak_depth_warning_shown:
+                messagebox.showwarning(
+                    "Внимание! Безопасность!",
+                    "Параметр 'ПИКОВАЯ ГЛУБИНА' отвечает за безопасность!\n"
+                    "Использовать только после ознакомления с FAQ!"
+                )
+                self.peak_depth_warning_shown = True
         else:
-            self.additional_params_container.pack_forget()
-            self.additional_params_header.config(text="▶ ДОП. ПАРАМЕТРЫ ▶")
+            self.peak_depth_container.pack_forget()
+            self.peak_depth_header.config(text="▶ ПИКОВАЯ ГЛУБИНА ▶")
         self.root.update_idletasks()
 
     def get_order_number(self):
@@ -222,12 +246,11 @@ class COXOproScan:
                 parent=self.root
             )
             
-            if order_number is None:  # Пользователь нажал Cancel
+            if order_number is None:
                 return None
                 
             order_number = order_number.strip()
             if order_number:
-                # Убираем недопустимые символы для имени файла
                 invalid_chars = '<>:"/\\|?*'
                 for char in invalid_chars:
                     order_number = order_number.replace(char, '')
@@ -257,9 +280,8 @@ class COXOproScan:
             if errors: 
                 raise ValueError("\n".join(errors))
 
-            # Запрашиваем номер заказа
             order_number = self.get_order_number()
-            if order_number is None:  # Пользователь отменил ввод
+            if order_number is None:
                 return
 
             gcode = [
@@ -334,7 +356,6 @@ class COXOproScan:
                 ""
             ])
 
-            # Используем номер заказа в имени файла
             filename = f"{order_number}scan.tap"
             filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
             
@@ -370,10 +391,7 @@ class COXOproScan:
             if not points_file:
                 return
 
-            # Получаем имя выбранного файла без расширения
             original_filename = os.path.splitext(os.path.basename(points_file))[0]
-            
-            # Формируем новое имя файла с добавлением "vector"
             new_filename = f"{original_filename}vector.dxf"
             filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", new_filename)
 
@@ -432,76 +450,144 @@ class COXOproScan:
         if self.tap_file_path:
             messagebox.showinfo("Файл выбран", f"Выбран файл:\n{self.tap_file_path}")
 
+    def _generate_cyclic_passes(self, original_block: List[str], depth_step: float, copies_count: int) -> List[str]:
+        """Генерирует циклические проходы с сохранением смещения по X"""
+        all_passes = []
+        
+        # Первый проход - оригинальный
+        all_passes.extend(original_block)
+        
+        # Если нужен только один проход - возвращаем как есть
+        if copies_count <= 1:
+            return all_passes
+        
+        # Извлекаем первую Y координату для возврата
+        first_y = self._extract_first_y_coordinate(original_block)
+        
+        # Генерируем дополнительные проходы
+        for pass_num in range(1, copies_count):
+            current_depth_offset = depth_step * pass_num
+            
+            # Добавляем переход к началу
+            all_passes.append("(*** ЦИКЛ ПРОХОД {} ***)".format(pass_num + 1))
+            
+            # Перемещаемся к началу по Y, сохраняя текущую X координату
+            if first_y is not None:
+                all_passes.append(f"G0 Y{first_y:.4f}")
+            
+            # Дублируем весь рабочий блок с НАКОПЛЕННЫМ смещением глубины
+            deepened_block = self._apply_depth_offset(original_block, current_depth_offset)
+            all_passes.extend(deepened_block)
+        
+        return all_passes
+
+    def _extract_first_y_coordinate(self, block: List[str]) -> Optional[float]:
+        """Извлекает Y-координату из первой команды перемещения в блоке"""
+        for line in block:
+            if 'Y' in line and not line.startswith('('):
+                try:
+                    # Ищем Y-координату в строке
+                    parts = line.split()
+                    for part in parts:
+                        if part.startswith('Y'):
+                            return float(part[1:])
+                except ValueError:
+                    continue
+        return None
+
+    def _apply_depth_offset(self, block: List[str], offset: float) -> List[str]:
+        """Применяет смещение глубины ко всем X-координатам в блоке"""
+        processed_block = []
+        
+        for line in block:
+            if 'X' in line and not line.startswith('('):
+                # Обрабатываем только строки с X-координатами
+                processed_line = self._offset_x_coordinate(line, offset)
+                processed_block.append(processed_line)
+            else:
+                # Оставляем без изменений комментарии и другие команды
+                processed_block.append(line)
+        
+        return processed_block
+
+    def _offset_x_coordinate(self, line: str, offset: float) -> str:
+        """Применяет смещение к X-координате в строке G-кода"""
+        parts = line.split()
+        
+        for i, part in enumerate(parts):
+            if part.startswith('X'):
+                try:
+                    x_val = float(part[1:])
+                    new_x = x_val + offset
+                    parts[i] = f"X{new_x:.4f}"
+                except ValueError:
+                    continue
+        
+        return " ".join(parts)
+
     def process_tap_file(self):
         """Обрабатывает .tap файл с циклической обработкой"""
         try:
             if not hasattr(self, 'tap_file_path') or not self.tap_file_path:
                 raise ValueError("Сначала выберите файл .tap (кнопка ОТКРЫТЬ УП)")
 
-            # Получаем параметры
             depth_step = self.cyclic_params["depth_step"].get()
             copies_count = self.cyclic_params["copies_count"].get()
 
             if depth_step <= 0:
                 raise ValueError("Шаг углубления должен быть > 0")
-            if copies_count <= 0:
-                raise ValueError("Количество проходов должно быть > 0")
+            if copies_count < 1:
+                raise ValueError("Количество проходов должно быть >= 1")
+
+            # Вычисляем общую глубину заглубления (УЧИТЫВАЕМ ПЕРВЫЙ ПРОХОД!)
+            total_depth = depth_step * copies_count
+            total_depth_str = f"{total_depth:.2f}".replace('.', '')
 
             # Чтение файла
             with open(self.tap_file_path, 'r', encoding='cp1251') as f:
-                lines = [line.strip() for line in f if line.strip()]
+                original_lines = [line.strip() for line in f if line.strip()]
 
-            # Находим индекс начала footer (G0 X0.0000 Y0.0000)
-            footer_start = -1
-            for i in range(len(lines)):
-                if lines[i].startswith("G0 X0.0000 Y0.0000"):
-                    footer_start = i
+            # Находим разделитель - строку ПЕРЕД G0 X0 Y0
+            split_index = -1
+            for i in range(len(original_lines) - 1):
+                if original_lines[i+1].startswith("G0 X0") or original_lines[i+1].startswith("G0Y0"):
+                    split_index = i
                     break
             
-            if footer_start == -1:
-                raise ValueError("Не найден конец файла (G0 X0.0000 Y0.0000)")
+            if split_index == -1:
+                raise ValueError("Не найдена точка вставки циклов (перед G0 X0 Y0)")
 
-            # Разделение файла
-            header = lines[:6]  # Первые 6 строк без изменений
-            original_block = lines[6:footer_start]  # Основной блок для обработки
-            footer = lines[footer_start:]  # Конец (G0,M5,M30) без изменений
-
-            # Обработка основного блока
-            processed_content = []
-            current_block = original_block.copy()
+            # Разделяем файл
+            header_and_working = original_lines[:split_index + 1]
+            footer = original_lines[split_index + 1:]
             
-            # Добавляем оригинальный блок (первый проход)
-            processed_content.extend(current_block)
+            # Извлекаем рабочий блок (после G21, но саму G21 не включаем)
+            working_block_start = -1
+            for i, line in enumerate(header_and_working):
+                if "G21" in line:
+                    working_block_start = i
+                    break
             
-            # Генерируем зеркальные копии (остальные проходы)
-            for i in range(copies_count - 1):  # -1 потому что первый проход уже добавлен
-                # Зеркалим предыдущий блок
-                mirrored_block = current_block[::-1]
-                
-                # Применяем смещение к X
-                shifted_block = []
-                for line in mirrored_block:
-                    if "X" in line:
-                        parts = line.split()
-                        for j, part in enumerate(parts):
-                            if part.startswith("X"):
-                                x_val = float(part[1:])
-                                new_x = x_val + depth_step
-                                parts[j] = f"X{new_x:.4f}"
-                        line = " ".join(parts)
-                    shifted_block.append(line)
-                
-                processed_content.extend(shifted_block)
-                current_block = shifted_block  # Для следующей итерации
-
+            if working_block_start == -1:
+                header = header_and_working
+                working_block = []
+            else:
+                header = header_and_working[:working_block_start + 1]
+                working_block = header_and_working[working_block_start + 1:]
+            
+            # Генерируем все проходы
+            all_passes = self._generate_cyclic_passes(working_block, depth_step, copies_count)
+            
             # Собираем новый файл
-            new_content = header + processed_content + footer
+            new_content = header + all_passes + footer
             
-            # Сохранение с новым именем
-            new_filepath = os.path.join(
-                os.path.dirname(self.tap_file_path),
-                f"mirrored_{os.path.basename(self.tap_file_path)}"
-            )
+            # Формируем имя файла
+            original_filename = os.path.basename(self.tap_file_path)
+            name_without_ext = os.path.splitext(original_filename)[0]
+            new_filename = f"{name_without_ext}cycle{total_depth_str}.tap"
+            
+            # Сохраняем
+            new_filepath = os.path.join(os.path.dirname(self.tap_file_path), new_filename)
             
             with open(new_filepath, 'w', encoding='cp1251') as f:
                 f.write("\n".join(new_content) + "\n")
@@ -511,8 +597,10 @@ class COXOproScan:
                 f"Файл успешно обработан:\n{new_filepath}\n"
                 f"Параметры обработки:\n"
                 f"- Шаг углубления: {depth_step} мм\n"
-                f"- Количество проходов: {copies_count}"
+                f"- Количество проходов: {copies_count}\n"
+                f"- Общая глубина заглубления: {total_depth:.2f} мм"
             )
+            
         except ValueError as ve:
             messagebox.showerror("Ошибка ввода", str(ve))
         except Exception as e:
