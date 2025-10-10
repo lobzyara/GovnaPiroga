@@ -146,13 +146,6 @@ class COXOproScan:
         
         ttk.Button(
             btn_frame,
-            text="СБРОС",
-            style="Custom.TButton",
-            command=self.reset_settings
-        ).pack(side=tk.LEFT, expand=True, padx=1)
-
-        ttk.Button(
-            btn_frame,
             text="G-КОД",
             style="Custom.TButton",
             command=self.generate_gcode
@@ -160,7 +153,7 @@ class COXOproScan:
 
         ttk.Button(
             btn_frame,
-            text="DXF",
+            text="ВЕКТОР ИЗ СКАНА",
             style="Custom.TButton",
             command=self.create_artcam_file
         ).pack(side=tk.LEFT, expand=True, padx=1)
@@ -219,19 +212,6 @@ class COXOproScan:
             self.additional_params_container.pack_forget()
             self.additional_params_header.config(text="▶ ДОП. ПАРАМЕТРЫ ▶")
         self.root.update_idletasks()
-
-    def reset_settings(self):
-        self.params["scan_length"].set(0.0)
-        self.params["retract"].set(5.0)
-        self.params["speed"].set(300.0)
-        self.params["probe_depth"].set(20.0)
-        self.params["use_start_zone"].set(False)
-        self.params["start_zone_length"].set(0.0)
-        self.params["start_zone_step"].set(0.0)
-        self.params["main_zone_step"].set(1.0)
-        self.params["use_end_zone"].set(False)
-        self.params["end_zone_length"].set(0.0)
-        self.params["end_zone_step"].set(0.0)
 
     def generate_gcode(self):
         try:
