@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 import os
 from datetime import datetime
 import sys
@@ -213,6 +213,28 @@ class COXOproScan:
             self.additional_params_header.config(text="▶ ДОП. ПАРАМЕТРЫ ▶")
         self.root.update_idletasks()
 
+    def get_order_number(self):
+        """Запрашивает номер завода у пользователя"""
+        while True:
+            order_number = simpledialog.askstring(
+                "Номер заказа", 
+                "Введите номер заказа:",
+                parent=self.root
+            )
+            
+            if order_number is None:  # Пользователь нажал Cancel
+                return None
+                
+            order_number = order_number.strip()
+            if order_number:
+                # Убираем недопустимые символы для имени файла
+                invalid_chars = '<>:"/\\|?*'
+                for char in invalid_chars:
+                    order_number = order_number.replace(char, '')
+                return order_number
+            else:
+                messagebox.showwarning("Пустой номер", "Номер заказа не может быть пустым!")
+
     def generate_gcode(self):
         try:
             params = {name: var.get() for name, var in self.params.items()}
@@ -234,6 +256,11 @@ class COXOproScan:
             
             if errors: 
                 raise ValueError("\n".join(errors))
+
+            # Запрашиваем номер заказа
+            order_number = self.get_order_number()
+            if order_number is None:  # Пользователь отменил ввод
+                return
 
             gcode = [
                 "(*** сканирование ***)",
@@ -307,7 +334,8 @@ class COXOproScan:
                 ""
             ])
 
-            filename = f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.tap"
+            # Используем номер заказа в имени файла
+            filename = f"{order_number}scan.tap"
             filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
             
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -317,6 +345,7 @@ class COXOproScan:
             messagebox.showinfo(
                 "Готово!",
                 f"G-код сохранён в:\n{filepath}\n"
+                f"Номер заказа: {order_number}\n"
                 f"Общая длина: {y_pos:.2f} мм\n"
                 f"Шагов: {len(gcode) - 7}\n"
                 f"Стартовая зона: {params['start_zone_length']} мм\n"
