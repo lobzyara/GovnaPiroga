@@ -370,6 +370,13 @@ class COXOproScan:
             if not points_file:
                 return
 
+            # Получаем имя выбранного файла без расширения
+            original_filename = os.path.splitext(os.path.basename(points_file))[0]
+            
+            # Формируем новое имя файла с добавлением "vector"
+            new_filename = f"{original_filename}vector.dxf"
+            filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", new_filename)
+
             points = []
             with open(points_file, 'r', encoding='cp1251') as f:
                 for line in f:
@@ -387,9 +394,6 @@ class COXOproScan:
 
             if len(points) < 2:
                 raise ValueError("Необходимо минимум 2 точки для создания полилинии")
-
-            filename = f"artcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dxf"
-            filepath = os.path.join(os.path.expanduser("~"), "Desktop", "COXOproScan", filename)
             
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             
@@ -411,6 +415,7 @@ class COXOproScan:
             messagebox.showinfo(
                 "Готово!",
                 f"DXF файл успешно создан:\n{filepath}\n"
+                f"Исходный файл: {os.path.basename(points_file)}\n"
                 f"Количество точек: {len(points)}"
             )
         except ValueError as ve:
